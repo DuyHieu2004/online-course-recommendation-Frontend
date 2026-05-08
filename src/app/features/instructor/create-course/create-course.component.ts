@@ -99,10 +99,14 @@ import Swal from 'sweetalert2';
                     <span style="font-size: 14px;">
                       {{ lesson.lyThuyet ? (lesson.lyThuyet.length > 50 ? lesson.lyThuyet.substring(0, 50) + '...' : lesson.lyThuyet) : 'Bài học' }}
                       <span *ngIf="lesson.linkVideo" style="color: var(--success); font-size: 11px; margin-left: 6px;" title="Đã có video">🎥 (Có Video)</span>
+                      <span *ngIf="lesson.linkTaiLieu" style="color: var(--primary); font-size: 11px; margin-left: 6px;" title="Đã có tài liệu">📄 (Có PDF)</span>
                     </span>
-                    <div>
-                      <input type="file" #videoInput style="display:none" accept="video/mp4" (change)="onVideoChange($event, lesson.maBaiHoc || lesson.MaBaiHoc)">
-                      <button class="btn btn-outline btn-sm" title="Upload Video" (click)="videoInput.click()"><i class="fa-solid fa-upload"></i> Upload Video</button>
+                    <div style="display: flex; gap: 8px;">
+                      <input type="file" #videoInput style="display:none" accept="video/*" (change)="onVideoChange($event, lesson.maBaiHoc || lesson.MaBaiHoc)">
+                      <button class="btn btn-outline btn-sm" title="Upload Video" (click)="videoInput.click()"><i class="fa-solid fa-film"></i> Video</button>
+                      
+                      <input type="file" #pdfInput style="display:none" accept=".pdf" (change)="onPdfChange($event, lesson.maBaiHoc || lesson.MaBaiHoc)">
+                      <button class="btn btn-outline btn-sm" title="Upload Tài liệu PDF" (click)="pdfInput.click()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
                     </div>
                   </div>
                   <div *ngIf="!ch.baiHocs || ch.baiHocs.length === 0" style="font-size: 12px; color: var(--gray-400);">Chưa có bài học nào trong chương này.</div>
@@ -110,12 +114,31 @@ import Swal from 'sweetalert2';
               </div>
             </div>
           </div>
+
+          <!-- Quản lý Thông báo -->
+          <div class="form-card card" *ngIf="editId">
+            <div class="section-header">
+              <h3><i class="fa-solid fa-bullhorn"></i> Thông báo cho lớp học</h3>
+              <button class="btn btn-primary btn-sm" (click)="showCreateAnnouncement()"><i class="fa-solid fa-plus"></i> Viết thông báo</button>
+            </div>
+            <div class="announcement-list">
+              <div class="announcement-item card" *ngFor="let tb of announcements" style="padding: 16px; margin-bottom: 12px; border: 1px solid var(--gray-200); position: relative;">
+                <h4 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700;">{{ tb.tieuDe || tb.TieuDe }}</h4>
+                <p style="font-size: 13px; color: var(--gray-600); white-space: pre-line; margin-bottom: 12px;">{{ tb.noiDung || tb.NoiDung }}</p>
+                <span style="font-size: 11px; color: var(--gray-400);">{{ tb.ngayTao || tb.NgayTao | date:'dd/MM/yyyy HH:mm' }}</span>
+                <button class="btn btn-icon btn-sm" title="Xóa thông báo" style="position: absolute; top: 16px; right: 16px; color: var(--danger); border-color: transparent;" (click)="deleteAnnouncement(tb.maThongBao || tb.MaThongBao)">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+              <div *ngIf="announcements.length === 0" style="font-size: 12px; color: var(--gray-400);">Chưa có thông báo nào.</div>
+            </div>
+          </div>
         </div>
 
         <!-- Sidebar -->
         <aside class="create-sidebar">
           <div class="publish-card card">
-            <h3>📤 Xuất bản</h3>
+            <h3> Xuất bản</h3>
             <div class="pub-status">
               <span>Trạng thái:</span>
               <span class="badge" [class.badge-success]="status === 'Published'" [class.badge-warning]="status === 'Draft'" [class.badge-danger]="status === 'Pending'">
@@ -132,6 +155,14 @@ import Swal from 'sweetalert2';
                <i class="fa-solid fa-circle-notch fa-spin" *ngIf="isSaving"></i>
                <i class="fa-solid fa-save" *ngIf="!isSaving"></i>
                {{ editId ? 'Cập nhật khóa học' : 'Lưu thông tin cơ bản' }}
+            </button>
+
+            <button *ngIf="editId && (status === 'Draft' || status === 'Rejected')" 
+                    class="btn btn-outline w-100" 
+                    style="margin-top: 12px; height: 44px; border-color: var(--primary); color: var(--primary);" 
+                    (click)="submitForReview()"
+                    [disabled]="isSaving">
+              <i class="fa-solid fa-paper-plane"></i> Gửi duyệt khóa học
             </button>
 
             <!-- <div class="split-info">
@@ -245,13 +276,14 @@ export class CreateCourseComponent implements OnInit {
 
   coverFileName = '';
   chapters: any[] = [];
+  announcements: any[] = [];
 
   ngOnInit() {
     this.editId = this.route.snapshot.paramMap.get('id');
-    
+
     // Load categories first
     this.api.getCategories().subscribe(res => {
-      this.categories = res || [];
+      this.categories = res?.data || res || [];
       if (!this.editId && this.categories.length > 0) {
         this.selectedCategory = this.categories[0].maTheLoai || this.categories[0].MaTheLoai;
       }
@@ -284,6 +316,9 @@ export class CreateCourseComponent implements OnInit {
           },
           error: () => this.isInitialLoading = false
         });
+
+        // Tải thông báo
+        this.loadAnnouncements(id);
       },
       error: () => {
         this.isInitialLoading = false;
@@ -306,7 +341,7 @@ export class CreateCourseComponent implements OnInit {
   }
 
   showCreateChapter() {
-     Swal.fire({
+    Swal.fire({
       title: 'Tạo chương mới',
       input: 'text',
       inputLabel: 'Tiêu đề chương',
@@ -322,8 +357,8 @@ export class CreateCourseComponent implements OnInit {
       if (result.isConfirmed && this.editId) {
         this.api.createChapter(Number(this.editId), { tieuDe: result.value }).subscribe({
           next: () => {
-             Swal.fire('Thành công', 'Đã thêm chương mới', 'success');
-             this.api.getCourseChapters(Number(this.editId)).subscribe((res) => this.chapters = res.data || res || []);
+            Swal.fire('Thành công', 'Đã thêm chương mới', 'success');
+            this.api.getCourseChapters(Number(this.editId)).subscribe((res) => this.chapters = res.data || res || []);
           },
           error: () => Swal.fire('Lỗi', 'Không thể tạo chương', 'error')
         });
@@ -332,7 +367,7 @@ export class CreateCourseComponent implements OnInit {
   }
 
   showCreateLesson(chapterId: number) {
-     Swal.fire({
+    Swal.fire({
       title: 'Thêm bài học mới',
       input: 'textarea',
       inputLabel: 'Tiêu đề / Lý thuyết bài học',
@@ -348,8 +383,8 @@ export class CreateCourseComponent implements OnInit {
       if (result.isConfirmed) {
         this.api.createLesson(chapterId, { lyThuyet: result.value }).subscribe({
           next: () => {
-             Swal.fire('Thành công', 'Đã thêm bài học mới', 'success');
-             if(this.editId) this.api.getCourseChapters(Number(this.editId)).subscribe((res) => this.chapters = res.data || res || []);
+            Swal.fire('Thành công', 'Đã thêm bài học mới', 'success');
+            if (this.editId) this.api.getCourseChapters(Number(this.editId)).subscribe((res) => this.chapters = res.data || res || []);
           },
           error: () => Swal.fire('Lỗi', 'Không thể tạo bài học', 'error')
         });
@@ -361,26 +396,101 @@ export class CreateCourseComponent implements OnInit {
     const file = event.target.files[0];
     if (file) {
       Swal.fire({
-         title: 'Đang tải lên...',
-         text: 'Vui lòng đợi (cửa sổ sẽ tự đóng khi xong)',
-         allowOutsideClick: false,
-         didOpen: () => { Swal.showLoading() }
+        title: 'Đang tải lên...',
+        text: 'Đang tải video lên Cloudinary, vui lòng đợi...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading() }
       });
       this.api.uploadLessonVideo(lessonId, file).subscribe({
         next: () => {
-           Swal.fire('Thành công', 'Đã tải upload video', 'success');
-           if(this.editId) this.api.getCourseChapters(Number(this.editId)).subscribe((res) => this.chapters = res.data || res || []);
+          Swal.fire('Thành công', 'Đã tải upload video', 'success');
+          if (this.editId) this.api.getCourseChapters(Number(this.editId)).subscribe((res) => this.chapters = res.data || res || []);
         },
         error: (err) => Swal.fire('Lỗi', 'Tải video thất bại: ' + (err.error?.message || ''), 'error')
       });
     }
   }
 
+  onPdfChange(event: any, lessonId: number) {
+    const file = event.target.files[0];
+    if (file) {
+      Swal.fire({
+        title: 'Đang tải lên...',
+        text: 'Đang tải tài liệu lên Cloudinary, vui lòng đợi...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading() }
+      });
+      this.api.uploadLessonPdf(lessonId, file).subscribe({
+        next: () => {
+          Swal.fire('Thành công', 'Đã tải upload tài liệu', 'success');
+          if (this.editId) this.api.getCourseChapters(Number(this.editId)).subscribe((res) => this.chapters = res.data || res || []);
+        },
+        error: (err) => Swal.fire('Lỗi', 'Tải tài liệu thất bại: ' + (err.error?.message || ''), 'error')
+      });
+    }
+  }
+
+  loadAnnouncements(id: number) {
+    this.api.getInstructorCourseAnnouncements(id).subscribe(res => {
+      this.announcements = res || [];
+    });
+  }
+
+  showCreateAnnouncement() {
+    Swal.fire({
+      title: 'Viết thông báo',
+      html: `
+        <input id="tb-title" class="swal2-input" placeholder="Tiêu đề thông báo">
+        <textarea id="tb-content" class="swal2-textarea" placeholder="Nội dung..."></textarea>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Đăng thông báo',
+      cancelButtonText: 'Hủy',
+      preConfirm: () => {
+        const title = (document.getElementById('tb-title') as HTMLInputElement).value;
+        const content = (document.getElementById('tb-content') as HTMLTextAreaElement).value;
+        if (!title || !content) { Swal.showValidationMessage('Vui lòng nhập đủ thông tin!'); }
+        return { tieuDe: title, noiDung: content };
+      }
+    }).then((result) => {
+      if (result.isConfirmed && this.editId) {
+        this.api.createAnnouncement(Number(this.editId), result.value).subscribe({
+          next: () => {
+            Swal.fire('Thành công', 'Đã đăng thông báo', 'success');
+            this.loadAnnouncements(Number(this.editId));
+          },
+          error: () => Swal.fire('Lỗi', 'Không thể đăng thông báo', 'error')
+        });
+      }
+    });
+  }
+
+  deleteAnnouncement(id: number) {
+    Swal.fire({
+      title: 'Xóa thông báo?',
+      text: 'Bạn có chắc chắn muốn xóa?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Xóa'
+    }).then((result) => {
+      if (result.isConfirmed && this.editId) {
+        this.api.deleteAnnouncement(id).subscribe({
+          next: () => {
+            Swal.fire('Đã xóa', '', 'success');
+            this.loadAnnouncements(Number(this.editId));
+          },
+          error: () => Swal.fire('Lỗi', 'Không thể xóa', 'error')
+        });
+      }
+    });
+  }
+
   getStatusLabel(): string {
     const map: Record<string, string> = {
       'Published': 'Đã xuất bản',
       'Draft': 'Bản nháp',
-      'Pending': 'Chờ duyệt'
+      'Pending': 'Chờ duyệt',
+      'Rejected': 'Bị từ chối'
     };
     return map[this.status] || 'Bản nháp';
   }
@@ -401,26 +511,68 @@ export class CreateCourseComponent implements OnInit {
       capDo: this.selectedLevel
     };
 
-    const request = this.editId 
+    const request = this.editId
       ? this.api.updateCourse(Number(this.editId), data)
       : this.api.createCourse(data);
 
     request.subscribe({
-      next: () => {
+      next: (res) => {
         this.isSaving = false;
-        Swal.fire('Thành công', this.editId ? 'Đã cập nhật khóa học' : 'Đã tạo khóa học mới', 'success');
-        this.router.navigate(['/instructor/courses']);
+        Swal.fire('Thành công', this.editId ? 'Đã cập nhật khóa học' : 'Đã tạo khóa học mới! Bạn có thể tải ảnh bìa và thêm nội dung.', 'success');
+        if (this.editId) {
+          this.router.navigate(['/instructor/courses']);
+        } else {
+          // Chuyển sang chế độ edit để upload ảnh bìa & thêm chương
+          const newId = res.courseId;
+          this.router.navigate(['/instructor/courses/edit', newId]);
+        }
       },
       error: (err) => {
         this.isSaving = false;
         let errMsg = err.error?.message;
         if (!errMsg && err.error?.errors) {
-            // Lấy tất cả các lỗi validation (nếu có)
-            errMsg = Object.values(err.error.errors).flat().join('\n');
+          // Lấy tất cả các lỗi validation (nếu có)
+          errMsg = Object.values(err.error.errors).flat().join('\n');
         }
         if (!errMsg && err.message) errMsg = err.message;
 
         Swal.fire('Lỗi', errMsg || 'Lỗi ' + err.status + ' - Có lỗi xảy ra khi lưu', 'error');
+      }
+    });
+  }
+
+  submitForReview() {
+    if (!this.editId) return;
+
+    Swal.fire({
+      title: 'Xác nhận gửi duyệt?',
+      text: "Khóa học sẽ được gửi cho quản trị viên xem xét. Đảm bảo bạn đã hoàn tất nội dung.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#5B63D3',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Đúng, gửi duyệt!',
+      cancelButtonText: 'Hủy'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.isSaving = true;
+        this.api.submitCourseForReview(Number(this.editId)).subscribe({
+          next: (res) => {
+            this.isSaving = false;
+            Swal.fire('Thành công', res.message, 'success');
+            this.status = 'Pending';
+            this.router.navigate(['/instructor/courses']);
+          },
+          error: (err) => {
+            this.isSaving = false;
+            let msg = 'Có lỗi xảy ra khi gửi duyệt.';
+            if (err.error?.message) msg = err.error.message;
+            else if (typeof err.error === 'string') msg = err.error;
+            else if (err.message) msg = err.message;
+
+            Swal.fire('Thất bại', msg, 'error');
+          }
+        });
       }
     });
   }

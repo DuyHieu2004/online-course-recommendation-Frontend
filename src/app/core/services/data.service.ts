@@ -48,6 +48,11 @@ export class DataService {
   constructor() {
     this.loadCategories();
     this.loadCourses();
+
+    if (this.auth.isLoggedIn()) {
+      this.loadCart();
+      this.loadMyCourses();
+    }
   }
 
   // ========================
@@ -262,6 +267,8 @@ export class DataService {
       color: this.getColorForUser(u.maNguoiDung),
       joinDate: u.ngayTao ? new Date(u.ngayTao).toLocaleDateString('vi-VN') : 'Mới',
       status: u.tinhTrang === 'Bị khóa' ? 'inactive' : 'active',
+      originalStatus: u.tinhTrang,
+      hoSoBangCap: u.hoSoBangCap,
       coursesCount: u.vaiTro === 'GiaoVien' ? 5 : 0, // Mock số lượng khóa học cho giảng viên
       rating: 5
     };

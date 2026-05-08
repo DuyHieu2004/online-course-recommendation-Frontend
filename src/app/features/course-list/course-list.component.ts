@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../../shared/components/header/header.component';
+import { CourseCardComponent } from '../../shared/components/course-card/course-card.component';
 import { DataService } from '../../core/services/data.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -10,7 +11,7 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-course-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, HeaderComponent],
+  imports: [CommonModule, FormsModule, HeaderComponent, CourseCardComponent],
   template: `
     <app-header />
     <div class="page-body">
@@ -141,26 +142,8 @@ import Swal from 'sweetalert2';
 
         <!-- Course Grid -->
         <div class="course-grid" *ngIf="filteredCourses().length > 0">
-          <div *ngFor="let course of filteredCourses()" class="course-item card">
-            <div class="item-image" style="cursor: pointer" (click)="goToDetail(course.id)">
-              <img *ngIf="course.image && course.image.length > 5" [src]="course.image" (error)="course.image = ''" alt="course" style="width: 100%; height: 100%; object-fit: cover;">
-              <div *ngIf="!course.image || course.image.length <= 5" class="item-emoji" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%"><i class="fa-solid fa-box"></i></div>
-              <span *ngIf="course.aiMatch" class="ai-badge badge badge-primary">🤖 AI {{ course.aiMatch }}%</span>
-            </div>
-            <div class="item-body" style="cursor: pointer" (click)="goToDetail(course.id)">
-              <h3 class="line-clamp-2">{{ course.title }}</h3>
-              <p class="instructor">{{ course.instructor }}</p>
-              <div class="rating-row">
-                <span class="stars">★★★★★</span>
-                <span class="rating-text">{{ course.rating }} ({{ course.reviewCount }})</span>
-              </div>
-              <div class="price-row">
-                <span class="price">{{ course.price | number }}đ</span>
-                <span *ngIf="course.price !== undefined && course.originalPrice !== undefined && course.originalPrice > course.price" class="original">{{ course.originalPrice | number }}đ</span>
-                <span *ngIf="course.price === 0" class="free-badge">Miễn phí</span>
-              </div>
-            </div>
-            <button class="btn btn-primary btn-sm add-cart" (click)="addToCart(course.id)">+ Giỏ hàng</button>
+          <div *ngFor="let course of filteredCourses()">
+             <app-course-card [course]="course" [showCartBtn]="true"></app-course-card>
           </div>
         </div>
 
@@ -466,47 +449,8 @@ import Swal from 'sweetalert2';
     .course-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
+      gap: 24px;
     }
-    .course-item {
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .course-item:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-md);
-    }
-    .item-image {
-      height: 140px;
-      background: var(--primary-bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-    .item-emoji { font-size: 56px; }
-    .ai-badge { position: absolute; bottom: 8px; left: 8px; }
-    .item-body { padding: 12px; flex: 1; }
-    .item-body h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; line-height: 1.4; }
-    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .instructor { font-size: 12px; color: var(--gray-500); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .rating-row { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
-    .stars { color: var(--orange); font-size: 11px; }
-    .rating-text { font-size: 12px; color: var(--gray-500); }
-    .price-row { display: flex; align-items: center; gap: 8px; }
-    .price { font-weight: 800; color: var(--primary); font-size: 16px; }
-    .original { text-decoration: line-through; color: var(--gray-400); font-size: 13px; }
-    .free-badge {
-      background: rgba(40, 167, 69, 0.1);
-      color: #28A745;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 4px;
-    }
-    .add-cart { margin: 0 12px 12px; }
 
     /* ===== Pagination ===== */
     .pagination-wrapper {

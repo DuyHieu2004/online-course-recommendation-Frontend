@@ -142,7 +142,7 @@ import { ApiService } from '../../core/services/api.service';
               <strong>{{ cert.courseName }}</strong>
               <span>{{ cert.source }} • {{ cert.date }}</span>
             </div>
-            <button class="btn btn-primary btn-sm">📥 Tải về</button>
+            <button class="btn btn-primary btn-sm" (click)="downloadCert(cert)">👁️ Xem & In</button>
           </div>
         </div>
       </section>
@@ -210,24 +210,31 @@ import { ApiService } from '../../core/services/api.service';
   `,
   styles: [`
     .dash-hero {
-      background: linear-gradient(135deg, var(--primary), #4A51B5);
-      color: var(--white);
+      background: #ffffff;
+      color: #0f172a;
       padding: 40px 0 32px;
+      border-bottom: 1px solid var(--gray-200);
     }
     .dash-badge {
       display: inline-block;
-      background: rgba(255,255,255,0.15);
+      background: var(--primary-bg);
+      color: var(--primary);
       padding: 6px 16px;
       border-radius: 16px;
       font-size: 13px;
       margin-bottom: 16px;
+      font-weight: 700;
+      border: 1px solid rgba(234, 88, 12, 0.2);
     }
     .dash-hero h1 {
       font-size: 32px;
       font-weight: 800;
       margin-bottom: 6px;
+      color: #0f172a;
     }
-    .dash-hero p { opacity: 0.8; }
+    .dash-hero p {
+      color: var(--gray-500);
+    }
 
     .dash-content { padding: 24px 0 60px; }
 
@@ -731,5 +738,76 @@ export class DashboardComponent implements OnInit {
   private formatCount(n: number): string {
     if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
     return `${n}`;
+  }
+
+  downloadCert(cert: any) {
+    const studentName = this.authService.currentUser()?.userName || 'Học viên';
+
+    // Tạo giao diện chứng chỉ
+    const certHtml = `
+      <div id="print-cert" style="
+        padding: 40px;
+        border: 15px solid #1e293b;
+        background: #f8fafc;
+        text-align: center;
+        position: relative;
+        font-family: 'Times New Roman', serif;
+        box-shadow: inset 0 0 0 5px #cbd5e1;
+      ">
+        <div style="position: absolute; top: 30px; left: 30px; width: 60px; height: 60px; background: #f59e0b; border-radius: 50%; opacity: 0.2;"></div>
+        <div style="position: absolute; bottom: 30px; right: 30px; width: 100px; height: 100px; border: 5px solid #3b82f6; border-radius: 50%; opacity: 0.1;"></div>
+
+        <h1 style="color: #0f172a; font-size: 42px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;">Chứng Chỉ Hoàn Thành</h1>
+        <p style="color: #64748b; font-size: 16px; margin-bottom: 30px; text-transform: uppercase;">Giấy chứng nhận này được trao cho</p>
+
+        <h2 style="color: #1d4ed8; font-size: 36px; margin-bottom: 20px; font-style: italic; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; display: inline-block; min-width: 300px;">
+          ${studentName}
+        </h2>
+
+        <p style="color: #475569; font-size: 18px; margin-bottom: 15px;">Đã xuất sắc hoàn thành khóa học:</p>
+        <h3 style="color: #0f172a; font-size: 28px; margin-bottom: 30px;">${cert.courseName}</h3>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 50px;">
+          <div style="text-align: left;">
+            <p style="margin: 0; font-size: 14px; color: #64748b;">Mã chứng chỉ: ${cert.id}</p>
+            <p style="margin: 5px 0 0; font-size: 14px; color: #64748b;">Ngày cấp: ${cert.date}</p>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-family: 'Brush Script MT', cursive; font-size: 32px; color: #0f172a; margin-bottom: 5px;">EduLearn</div>
+            <div style="border-top: 1px solid #94a3b8; width: 150px; margin: 0 auto; padding-top: 5px; font-size: 14px; color: #475569;">Đại diện EduLearn</div>
+          </div>
+        </div>
+      </div>
+
+      <style>
+        @media print {
+          body * { visibility: hidden; }
+          #swal2-html-container, #swal2-html-container * { visibility: visible; }
+          #swal2-html-container { position: absolute; left: 0; top: 0; width: 100%; }
+          .swal2-popup { box-shadow: none !important; }
+          .swal2-actions { display: none !important; }
+        }
+      </style>
+    `;
+
+    import('sweetalert2').then(Swal => {
+      Swal.default.fire({
+        html: certHtml,
+        width: 800,
+        showCloseButton: true,
+        showCancelButton: true,
+        focusConfirm: false,
+        confirmButtonText: '<i class="fa-solid fa-print"></i> In chứng chỉ',
+        cancelButtonText: 'Đóng',
+        customClass: {
+          confirmButton: 'btn btn-primary',
+          cancelButton: 'btn btn-outline'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.print();
+        }
+      });
+    });
   }
 }

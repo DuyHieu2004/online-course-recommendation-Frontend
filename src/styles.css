@@ -11,10 +11,10 @@
 
 :root {
   /* Primary */
-  --primary: #5B63D3;
-  --primary-dark: #4A51B5;
-  --primary-light: #7B82E0;
-  --primary-bg: #ECEDF9;
+  --primary: #ea580c;
+  --primary-dark: #c2410c;
+  --primary-light: #f97316;
+  --primary-bg: #fff7ed;
 
   /* Dark Theme (AI page) */
   --dark-bg: #1E2142;

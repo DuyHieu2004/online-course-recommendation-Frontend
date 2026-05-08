@@ -45,7 +45,11 @@ export class ApiService {
   }
 
   deleteCourse(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/courses/${id}`);
+    return this.http.delete(`${this.apiUrl}/instructor/courses/${id}`);
+  }
+
+  submitCourseForReview(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/instructor/courses/${id}/submit`, {});
   }
 
   getCourseReviews(courseId: number, page = 1, pageSize = 10): Observable<any> {
@@ -55,12 +59,13 @@ export class ApiService {
   }
 
   // Admin: lấy tất cả khóa học (mọi trạng thái)
-  getAdminCourses(params?: { page?: number; pageSize?: number; search?: string; status?: string }): Observable<any> {
+  getAdminCourses(params?: { page?: number; pageSize?: number; search?: string; status?: string; sortBy?: string }): Observable<any> {
     let httpParams = new HttpParams();
     if (params?.page) httpParams = httpParams.set('page', params.page);
     if (params?.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
     if (params?.search) httpParams = httpParams.set('search', params.search);
     if (params?.status) httpParams = httpParams.set('status', params.status);
+    if (params?.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
     return this.http.get(`${this.apiUrl}/courses/admin/all`, { params: httpParams });
   }
 
@@ -162,6 +167,16 @@ export class ApiService {
     return this.http.put(`${this.apiUrl}/users/profile`, data);
   }
 
+  createAdmin(admin: { ten: string; email: string; matKhau: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/users/admin`, admin);
+  }
+
+  uploadDegree(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/users/profile/degree`, formData);
+  }
+
   deactivateAccount(): Observable<any> {
     return this.http.delete(`${this.apiUrl}/users/profile`);
   }
@@ -180,7 +195,7 @@ export class ApiService {
   applyPromotion(id: number, data: { courseIds: number[], categoryIds: number[] }): Observable<any> {
     return this.http.post(`${this.apiUrl}/promotions/${id}/apply`, data);
   }
-  
+
   getPromotions(page = 1, pageSize = 10, search?: string): Observable<any> {
     let params = new HttpParams().set('page', page).set('pageSize', pageSize);
     if (search) params = params.set('search', search);
@@ -238,6 +253,28 @@ export class ApiService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post(`${this.apiUrl}/instructor/lessons/${lessonId}/video`, formData);
+  }
+
+  uploadLessonPdf(lessonId: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/instructor/lessons/${lessonId}/pdf`, formData);
+  }
+
+  getInstructorCourseAnnouncements(courseId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/instructor/courses/${courseId}/announcements`);
+  }
+
+  createAnnouncement(courseId: number, data: { tieuDe: string, noiDung: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/instructor/courses/${courseId}/announcements`, data);
+  }
+
+  deleteAnnouncement(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/instructor/announcements/${id}`);
+  }
+
+  getPublicAnnouncements(courseId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/courses/${courseId}/announcements`);
   }
 
   // ========================

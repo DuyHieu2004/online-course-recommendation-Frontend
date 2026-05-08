@@ -9,12 +9,14 @@ export interface LoginResponse {
   role: string;
   userId: number;
   userName: string;
+  status?: string;
 }
 
 export interface UserInfo {
   userId: number;
   userName: string;
   role: string;
+  status?: string;
   avatar?: string;
   token: string;
 }
@@ -42,6 +44,7 @@ export class AuthService {
       userId: response.userId,
       userName: response.userName,
       role: response.role,
+      status: response.status,
       token: response.token
     };
     localStorage.setItem('auth_token', response.token);
@@ -53,12 +56,19 @@ export class AuthService {
     this.currentUser.set(user);
   }
 
-  register(ten: string, email: string, matKhau: string) {
-    return this.http.post<{ message: string; userId: number }>(`${this.apiUrl}/register`, {
-      ten,
-      email,
-      matKhau
-    });
+  register(ten: string, email: string, matKhau: string, role?: string, file?: File | null) {
+    const formData = new FormData();
+    formData.append('ten', ten);
+    formData.append('email', email);
+    formData.append('matKhau', matKhau);
+    if (role) {
+      formData.append('vaiTro', role);
+    }
+    if (file) {
+      formData.append('file', file);
+    }
+    
+    return this.http.post<{ message: string; userId: number }>(`${this.apiUrl}/register`, formData);
   }
 
   forgotPassword(email: string) {

@@ -4,7 +4,10 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import Swal from 'sweetalert2';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-learn',
@@ -83,9 +86,16 @@ import Swal from 'sweetalert2';
                 <div [innerHTML]="formatContent(currentLesson.lyThuyet)" style="line-height: 1.8; font-size: 15px;"></div>
               </div>
 
-              <div *ngIf="currentLesson?.baiTap" style="padding: 20px; background: rgba(91,99,211,0.05); border-left: 4px solid var(--primary); border-radius: 4px;">
+              <div *ngIf="currentLesson?.baiTap" style="padding: 20px; background: rgba(91,99,211,0.05); border-left: 4px solid var(--primary); border-radius: 4px; margin-bottom: 30px;">
                 <h4 style="font-size: 16px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-pen-to-square"></i> Bài tập</h4>
                 <div [innerHTML]="formatContent(currentLesson.baiTap)" style="line-height: 1.8; font-size: 15px;"></div>
+              </div>
+
+              <div *ngIf="currentLesson?.linkTaiLieu" style="padding: 20px; background: rgba(16,185,129,0.05); border-left: 4px solid var(--success); border-radius: 4px;">
+                <h4 style="font-size: 16px; color: var(--success); margin-bottom: 12px;"><i class="fa-solid fa-file-arrow-down"></i> Tài liệu đính kèm</h4>
+                <a [href]="getDocumentUrl(currentLesson.linkTaiLieu)" target="_blank" class="btn btn-success btn-sm" style="text-decoration: none;">
+                   <i class="fa-solid fa-download"></i> Tải xuống tài liệu
+                </a>
               </div>
             </div>
           </div>
@@ -119,7 +129,15 @@ import Swal from 'sweetalert2';
             <div class="exercise-content" [innerHTML]="formatContent(currentLesson.baiTap)"></div>
           </div>
 
-          <div *ngIf="!currentLesson.lyThuyet && !currentLesson.baiTap" class="empty-content">
+          <!-- Tài liệu -->
+          <div class="document-section" *ngIf="currentLesson.linkTaiLieu" style="margin-bottom: 20px; padding: 16px; background: rgba(16,185,129,0.05); border-radius: 8px; border-left: 3px solid var(--success);">
+            <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--success);"><i class="fa-solid fa-file-arrow-down"></i> Tài liệu đính kèm</h4>
+            <a [href]="getDocumentUrl(currentLesson.linkTaiLieu)" target="_blank" class="btn btn-outline" style="width: 100%; border-color: var(--success); color: var(--success); text-decoration: none; display: inline-block; text-align: center;">
+              <i class="fa-solid fa-download"></i> Tải xuống / Xem tài liệu
+            </a>
+          </div>
+
+          <div *ngIf="!currentLesson.lyThuyet && !currentLesson.baiTap && !currentLesson.linkTaiLieu" class="empty-content">
             <i class="fa-solid fa-book-open" style="font-size: 32px; color: var(--gray-400); margin-bottom: 8px"></i>
             <p>Chưa có nội dung cho bài học này.</p>
           </div>
@@ -135,9 +153,9 @@ import Swal from 'sweetalert2';
             <button class="btn btn-success" *ngIf="currentLesson.daHoanThanh && hasNextLesson()" (click)="goToNextLesson()">
               Bài tiếp theo <i class="fa-solid fa-arrow-right"></i>
             </button>
-            <a class="btn btn-warning" *ngIf="currentLesson.daHoanThanh && !hasNextLesson()" routerLink="/dashboard" style="text-decoration:none; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none;">
+            <button class="btn btn-warning" *ngIf="currentLesson.daHoanThanh && !hasNextLesson()" (click)="downloadCertificate()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none;">
               <i class="fa-solid fa-award"></i> Nhận chứng chỉ
-            </a>
+            </button>
           </div>
         </div>
 
@@ -388,6 +406,7 @@ export class LearnComponent implements OnInit {
   private router = inject(Router);
   private api = inject(ApiService);
   private sanitizer = inject(DomSanitizer);
+  private authService = inject(AuthService);
 
   courseData: any = null;
   currentLesson: any = null;
@@ -485,8 +504,15 @@ export class LearnComponent implements OnInit {
   }
 
   getVideoUrl(linkVideo: string): string {
+    if (!linkVideo) return '';
     if (linkVideo.startsWith('http')) return linkVideo;
     return 'http://localhost:5128' + linkVideo;
+  }
+
+  getDocumentUrl(linkTaiLieu: string): string {
+    if (!linkTaiLieu) return '';
+    if (linkTaiLieu.startsWith('http')) return linkTaiLieu;
+    return 'http://localhost:5128' + linkTaiLieu;
   }
 
   formatContent(text: string): SafeHtml {
@@ -594,6 +620,136 @@ export class LearnComponent implements OnInit {
       confirmButtonColor: '#5a67d8',
       confirmButtonText: 'Tiếp tục học'
     });
+  }
+
+  downloadCertificate() {
+    const studentName = this.authService.currentUser()?.userName || 'Học viên';
+    const courseName = this.courseData?.tieuDe || 'Khóa học lập trình';
+
+    // Lấy tên giảng viên
+    let instructorName = 'Đại diện EduLearn';
+    if (this.courseData?.chuongs && this.courseData.chuongs[0] && this.courseData.chuongs[0].giangVien) {
+      instructorName = this.courseData.chuongs[0].giangVien;
+    }
+
+    const currentDate = new Date().toLocaleDateString('vi-VN');
+
+    // Chữ ký (Font style)
+    const signatureStyle = "font-family: 'Brush Script MT', 'Dancing Script', cursive; font-size: 32px; color: #0f172a;";
+
+    const certHtml = `
+      <div id="pdf-cert-container" style="
+        width: 1000px;
+        height: 700px;
+        padding: 50px;
+        box-sizing: border-box;
+        border: 20px solid #1e293b;
+        background: #f8fafc;
+        text-align: center;
+        position: relative;
+        font-family: 'Times New Roman', serif;
+        box-shadow: inset 0 0 0 8px #cbd5e1;
+        overflow: hidden;
+      ">
+        <div style="position: absolute; top: 30px; left: 30px; width: 100px; height: 100px; background: #f59e0b; border-radius: 50%; opacity: 0.1;"></div>
+        <div style="position: absolute; bottom: -50px; right: -50px; width: 250px; height: 250px; border: 15px solid #3b82f6; border-radius: 50%; opacity: 0.05;"></div>
+        <div style="position: absolute; top: 100px; right: 80px; width: 50px; height: 50px; background: #10b981; transform: rotate(45deg); opacity: 0.1;"></div>
+
+        <div style="position: relative; z-index: 10;">
+          <h1 style="color: #0f172a; font-size: 52px; margin: 40px 0 10px; text-transform: uppercase; letter-spacing: 3px;">Chứng Chỉ Hoàn Thành</h1>
+          <p style="color: #64748b; font-size: 20px; margin-bottom: 40px; text-transform: uppercase; letter-spacing: 1px;">Giấy chứng nhận này được trao cho</p>
+
+          <h2 style="color: #1d4ed8; font-size: 46px; margin-bottom: 25px; font-style: italic; border-bottom: 3px solid #cbd5e1; padding-bottom: 15px; display: inline-block; min-width: 400px; font-weight: bold;">
+            ${studentName}
+          </h2>
+
+          <p style="color: #475569; font-size: 22px; margin-bottom: 20px;">Đã xuất sắc hoàn thành khóa học:</p>
+          <h3 style="color: #0f172a; font-size: 34px; margin-bottom: 60px; font-weight: bold; padding: 0 40px;">${courseName}</h3>
+
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 40px; position: absolute; bottom: 40px; width: 100%; box-sizing: border-box; left: 0;">
+            <div style="text-align: left;">
+              <p style="margin: 0; font-size: 16px; color: #64748b;">Mã chứng chỉ: CERT-${Math.floor(Math.random() * 90000) + 10000}</p>
+              <p style="margin: 8px 0 0; font-size: 16px; color: #64748b;">Ngày cấp: ${currentDate}</p>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 10px;">
+              <div style="width: 80px; height: 80px; background: url('https://img.icons8.com/color/96/000000/guarantee.png') center/cover; margin: 0 auto;"></div>
+            </div>
+
+            <div style="text-align: center;">
+              <div style="${signatureStyle}">${instructorName}</div>
+              <div style="border-top: 1px solid #94a3b8; width: 180px; margin: 5px auto 0; padding-top: 8px; font-size: 16px; color: #475569;">Giảng viên khóa học</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Hiển thị toast thông báo đang tạo PDF
+    Swal.fire({
+      title: 'Đang tạo chứng chỉ...',
+      text: 'Vui lòng đợi giây lát để hệ thống xuất file PDF',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // Tạo 1 div ẩn chứa giao diện
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.innerHTML = certHtml;
+    document.body.appendChild(tempDiv);
+
+    const targetElement = document.getElementById('pdf-cert-container') as HTMLElement;
+
+    // Render ra canvas
+    setTimeout(() => {
+      html2canvas(targetElement, {
+        scale: 2, // Chất lượng cao
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      }).then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+
+        // Khởi tạo file PDF (Landscape, A4)
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        // Căn chỉnh kích thước ảnh vào PDF A4 (297 x 210 mm)
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        pdf.addImage(imgData, 'PNG', 0, (pdf.internal.pageSize.getHeight() - pdfHeight) / 2, pdfWidth, pdfHeight);
+
+        // Tải xuống
+        pdf.save(`ChungChi_${this.courseData?.maKhoaHoc || 'KhoaHoc'}.pdf`);
+
+        // Dọn dẹp
+        document.body.removeChild(tempDiv);
+        Swal.close();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Thành công',
+          text: 'Chứng chỉ của bạn đã được tải xuống máy tính!',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }).catch(err => {
+        console.error('Lỗi khi tạo PDF:', err);
+        document.body.removeChild(tempDiv);
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Không thể tạo chứng chỉ ngay lúc này. Vui lòng thử lại sau.'
+        });
+      });
+    }, 500); // Đợi 500ms cho các resource kịp load
   }
 
   shareLink() {

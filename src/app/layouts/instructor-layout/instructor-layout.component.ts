@@ -9,7 +9,6 @@ import { AuthService } from '../../core/services/auth.service';
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
     <div class="instructor-layout">
-      <!-- Sidebar -->
       <aside class="instructor-sidebar">
         <div class="sidebar-brand">
           <a routerLink="/" class="brand-link">
@@ -21,30 +20,37 @@ import { AuthService } from '../../core/services/auth.service';
 
         <div class="sidebar-section-label">ĐIỀU KHIỂN</div>
         <nav class="instructor-nav">
-          <a routerLink="/instructor/dashboard" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
-            <span class="nav-text">Tổng quan</span>
-          </a>
-          <a routerLink="/instructor/courses" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon"><i class="fa-solid fa-book"></i></span>
-            <span class="nav-text">Khóa học của tôi</span>
-          </a>
-          <a routerLink="/instructor/courses/create" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon"><i class="fa-solid fa-plus-circle"></i></span>
-            <span class="nav-text">Tạo khóa học mới</span>
-          </a>
-          <a routerLink="/instructor/students" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
-            <span class="nav-text">Học viên</span>
-          </a>
-          <a routerLink="/instructor/revenue" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon"><i class="fa-solid fa-coins"></i></span>
-            <span class="nav-text">Doanh thu</span>
-          </a>
-          <a routerLink="/instructor/reports" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
-            <span class="nav-text">Báo cáo</span>
-          </a>
+          <ng-container *ngIf="authService.currentUser()?.status !== 'Chờ duyệt'; else pendingMenu">
+            <a routerLink="/instructor/dashboard" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+              <span class="nav-text">Tổng quan</span>
+            </a>
+            <a routerLink="/instructor/courses" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon"><i class="fa-solid fa-book"></i></span>
+              <span class="nav-text">Khóa học của tôi</span>
+            </a>
+            <a routerLink="/instructor/courses/create" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon"><i class="fa-solid fa-plus-circle"></i></span>
+              <span class="nav-text">Tạo khóa học mới</span>
+            </a>
+            <a routerLink="/instructor/students" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+              <span class="nav-text">Học viên</span>
+            </a>
+            <a routerLink="/instructor/revenue" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon"><i class="fa-solid fa-coins"></i></span>
+              <span class="nav-text">Doanh thu</span>
+            </a>
+            <a routerLink="/instructor/reports" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+              <span class="nav-text">Báo cáo</span>
+            </a>
+          </ng-container>
+          <ng-template #pendingMenu>
+            <div style="padding: 12px; color: #DC3545; font-size: 13px; text-align: center;">
+              Tài khoản đang chờ duyệt. Vui lòng vào Cài đặt để cập nhật Hồ sơ Bằng Cấp.
+            </div>
+          </ng-template>
         </nav>
 
         <div class="sidebar-section-label">TÙY CHỌN</div>
@@ -64,7 +70,7 @@ import { AuthService } from '../../core/services/auth.service';
             </div>
             <div class="sidebar-user-info">
               <span class="sidebar-user-name">{{ authService.currentUser()?.userName || 'Giảng viên' }}</span>
-              <span class="sidebar-user-role">Giảng viên</span>
+              <span class="sidebar-user-role" [style.color]="authService.currentUser()?.status === 'Chờ duyệt' ? '#DC3545' : ''">Giảng viên {{ authService.currentUser()?.status === 'Chờ duyệt' ? '(Chờ duyệt)' : '' }}</span>
             </div>
             <button class="sidebar-logout" title="Đăng xuất" (click)="logout()">
               <i class="fa-solid fa-right-from-bracket"></i>
@@ -73,9 +79,7 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
       </aside>
 
-      <!-- Main Area -->
       <div class="instructor-main">
-        <!-- Top Bar -->
         <header class="instructor-topbar">
           <div class="topbar-left">
             <div class="topbar-search">
@@ -84,10 +88,9 @@ import { AuthService } from '../../core/services/auth.service';
             </div>
           </div>
           <div class="topbar-right">
-          </div>
+            </div>
         </header>
 
-        <!-- Content -->
         <main class="instructor-content">
           <ng-content></ng-content>
         </main>
@@ -95,17 +98,34 @@ import { AuthService } from '../../core/services/auth.service';
     </div>
   `,
   styles: [`
+    /* Khai báo biến màu chung cho Layout */
+    :host {
+      --white: #ffffff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --primary: #ea580c; /* Cam chủ đạo */
+      --primary-light: #fff7ed; /* Cam nhạt */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
     /* ===== Layout ===== */
     .instructor-layout {
       display: flex;
       min-height: 100vh;
-      background: #F0F2F5; /* Matches Admin Layout background */
+      background: #F4F6F8; /* Nền xám rất nhạt cho phần main content */
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* ===== Sidebar ===== */
+    /* ===== Sidebar (Đã đổi sang Light Mode) ===== */
     .instructor-sidebar {
       width: 260px;
-      background: linear-gradient(180deg, #1A1D3A 0%, #12142B 100%);
+      background: var(--white);
+      border-right: 1px solid var(--gray-200);
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
@@ -118,24 +138,25 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .sidebar-brand {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid var(--gray-100);
     }
 
     .brand-link {
       display: flex;
       align-items: center;
-      gap: 10px;
-      color: var(--white);
-      font-size: 20px;
+      gap: 12px;
+      color: var(--gray-800);
+      font-size: 22px;
       font-weight: 800;
       margin-bottom: 8px;
+      text-decoration: none;
     }
 
     .brand-icon {
       width: 36px;
       height: 36px;
-      background: linear-gradient(135deg, #FF7B54 0%, #FFB26B 100%); /* Orange gradient for Instructor */
+      background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -143,27 +164,27 @@ import { AuthService } from '../../core/services/auth.service';
       font-size: 18px;
       font-weight: 900;
       color: white;
-      box-shadow: 0 4px 12px rgba(255, 123, 84, 0.4);
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
     }
 
     .brand-badge {
       display: inline-block;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
-      color: rgba(255, 178, 107, 0.9);
-      background: rgba(255, 123, 84, 0.12);
-      padding: 3px 10px;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 4px 12px;
       border-radius: 20px;
       letter-spacing: 0.5px;
       text-transform: uppercase;
     }
 
     .sidebar-section-label {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
-      color: rgba(255, 255, 255, 0.25);
-      letter-spacing: 1.5px;
-      padding: 20px 24px 8px;
+      color: var(--gray-400);
+      letter-spacing: 1px;
+      padding: 24px 24px 8px;
       text-transform: uppercase;
     }
 
@@ -172,36 +193,37 @@ import { AuthService } from '../../core/services/auth.service';
       display: flex;
       flex-direction: column;
       padding: 0 12px;
-      gap: 2px;
+      gap: 4px;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 11px 14px;
+      padding: 12px 14px;
       border-radius: 10px;
-      color: rgba(255, 255, 255, 0.55);
+      color: var(--gray-500);
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+      text-decoration: none;
+      transition: all 0.2s ease;
       position: relative;
     }
 
     .nav-item:hover {
-      color: rgba(255, 255, 255, 0.9);
-      background: rgba(255, 255, 255, 0.06);
+      color: var(--gray-800);
+      background: var(--gray-50);
     }
 
+    /* Trạng thái Active - Màu cam rực rỡ */
     .nav-item.active {
-      color: #FFFFFF;
-      background: linear-gradient(135deg, rgba(255, 123, 84, 0.35) 0%, rgba(255, 178, 107, 0.15) 100%);
-      box-shadow: 0 2px 12px rgba(255, 123, 84, 0.15);
+      color: var(--primary);
+      background: var(--primary-light);
     }
 
     .nav-item.active .nav-icon {
-      color: #FFB26B;
+      color: var(--primary);
     }
 
     .nav-item.active::before {
@@ -210,17 +232,17 @@ import { AuthService } from '../../core/services/auth.service';
       left: 0;
       top: 50%;
       transform: translateY(-50%);
-      width: 3px;
-      height: 20px;
-      background: linear-gradient(180deg, #FFB26B, #FF7B54);
+      width: 4px;
+      height: 24px;
+      background: var(--primary);
       border-radius: 0 4px 4px 0;
     }
 
     .nav-icon {
       width: 20px;
       text-align: center;
-      font-size: 15px;
-      transition: color 0.25s ease;
+      font-size: 16px;
+      transition: color 0.2s ease;
     }
 
     .nav-text {
@@ -230,35 +252,35 @@ import { AuthService } from '../../core/services/auth.service';
     /* ===== Sidebar Bottom User Card ===== */
     .sidebar-bottom {
       margin-top: auto;
-      padding: 16px 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 16px 16px 24px;
     }
 
     .sidebar-user-card {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
+      gap: 12px;
+      padding: 12px;
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      box-shadow: var(--shadow-sm);
     }
 
     .sidebar-user-avatar {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 10px;
       background-size: cover;
       background-position: center;
       flex-shrink: 0;
     }
     .sidebar-user-avatar.no-avt {
-      background: linear-gradient(135deg, #FF7B54 0%, #FFB26B 100%);
+      background: var(--gray-100);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-weight: 800;
+      color: var(--gray-700);
+      font-weight: 700;
       font-size: 14px;
     }
 
@@ -270,37 +292,39 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .sidebar-user-name {
-      color: var(--white);
-      font-weight: 600;
+      color: var(--gray-800);
+      font-weight: 700;
       font-size: 13px;
     }
 
     .sidebar-user-role {
-      color: rgba(255, 255, 255, 0.35);
-      font-size: 11px;
+      color: var(--gray-500);
+      font-size: 12px;
+      margin-top: 2px;
     }
 
     .sidebar-logout {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.06);
-      color: rgba(255, 255, 255, 0.4);
+      background: var(--gray-50);
+      color: var(--gray-500);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       transition: all 0.2s ease;
-      font-size: 13px;
-      border: none;
+      font-size: 14px;
+      border: 1px solid transparent;
     }
 
     .sidebar-logout:hover {
-      background: rgba(220, 53, 69, 0.2);
-      color: #FF6B7A;
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
     }
 
-    /* ===== Main Area ===== */
+    /* ===== Main Area & Top Bar ===== */
     .instructor-main {
       flex: 1;
       margin-left: 260px;
@@ -308,9 +332,8 @@ import { AuthService } from '../../core/services/auth.service';
       flex-direction: column;
     }
 
-    /* ===== Top Bar ===== */
     .instructor-topbar {
-      height: 64px;
+      height: 68px;
       background: var(--white);
       border-bottom: 1px solid var(--gray-200);
       display: flex;
@@ -320,12 +343,6 @@ import { AuthService } from '../../core/services/auth.service';
       position: sticky;
       top: 0;
       z-index: 40;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    }
-
-    .topbar-left {
-      display: flex;
-      align-items: center;
     }
 
     .topbar-search {
@@ -335,15 +352,15 @@ import { AuthService } from '../../core/services/auth.service';
       background: var(--gray-50);
       border: 1px solid var(--gray-200);
       border-radius: 10px;
-      padding: 9px 16px;
-      width: 300px;
-      transition: all 0.25s ease;
+      padding: 10px 16px;
+      width: 320px;
+      transition: all 0.2s ease;
     }
 
     .topbar-search:focus-within {
-      border-color: #FF7B54;
+      border-color: var(--primary);
       background: var(--white);
-      box-shadow: 0 0 0 3px rgba(255, 123, 84, 0.1);
+      box-shadow: 0 0 0 3px var(--primary-light);
     }
 
     .topbar-search i {
@@ -360,93 +377,6 @@ import { AuthService } from '../../core/services/auth.service';
       outline: none;
     }
 
-    .topbar-search input::placeholder {
-      color: var(--gray-400);
-    }
-
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .topbar-icon-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: transparent;
-      border: none;
-      color: var(--gray-500);
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-    }
-
-    .topbar-icon-btn:hover {
-      background: var(--gray-100);
-      color: #FF7B54;
-    }
-
-    .notif-dot {
-      position: absolute;
-      top: 9px;
-      right: 10px;
-      width: 8px;
-      height: 8px;
-      background: var(--danger);
-      border-radius: 50%;
-      border: 2px solid var(--white);
-    }
-
-    .topbar-divider {
-      width: 1px;
-      height: 28px;
-      background: var(--gray-200);
-      margin: 0 10px;
-    }
-
-    .topbar-user {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 12px 6px 6px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    .topbar-user:hover {
-      background: var(--gray-100);
-    }
-
-    .topbar-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background-size: cover;
-      background-position: center;
-    }
-    .topbar-avatar.no-avt {
-      background: linear-gradient(135deg, #FF7B54 0%, #FFB26B 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 800;
-      font-size: 14px;
-    }
-
-    .topbar-username {
-      font-weight: 600;
-      font-size: 14px;
-      color: var(--gray-700);
-    }
-
-    /* ===== Content ===== */
     .instructor-content {
       flex: 1;
       padding: 28px;
@@ -454,7 +384,7 @@ import { AuthService } from '../../core/services/auth.service';
   `]
 })
 export class InstructorLayoutComponent {
-  public authService = inject(AuthService);
+  authService = inject(AuthService);
 
   logout() {
     this.authService.logout();

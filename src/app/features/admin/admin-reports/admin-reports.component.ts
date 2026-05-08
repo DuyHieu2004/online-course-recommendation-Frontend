@@ -75,8 +75,8 @@ import { ApiService } from '../../../core/services/api.service';
             <div class="chart-title">
               <div class="chart-title-icon orange"><i class="fa-solid fa-trophy"></i></div>
               <div>
-                <h2>Khóa học mới nhất</h2>
-                <span class="chart-subtitle">Top 5 khóa học mới được tạo</span>
+                <h2>Top Doanh Thu Khóa Học</h2>
+                <span class="chart-subtitle">Top 5 khóa học mang lại doanh thu cao nhất</span>
               </div>
             </div>
           </div>
@@ -88,7 +88,8 @@ import { ApiService } from '../../../core/services/api.service';
                 <span>{{ course.instructor }} • {{ course.category }}</span>
               </div>
               <div class="top-course-revenue">
-                <strong>{{ course.price | currency:'VND':'symbol':'1.0-0' }}</strong>
+                <strong>{{ course.adminRevenue | currency:'VND':'symbol':'1.0-0' }}</strong>
+                <!-- <span style="display:block; font-size:11px; color:#6B7280; margin-top:2px;">(Admin 30%)</span> -->
               </div>
             </div>
           </div>
@@ -340,13 +341,14 @@ export class AdminReportsComponent implements OnInit {
   }
 
   loadTopCourses() {
-    this.api.getCourses({ page: 1, pageSize: 5 }).subscribe(res => {
+    this.api.getAdminCourses({ page: 1, pageSize: 5, sortBy: 'revenue' }).subscribe(res => {
       const dbC = res.data || [];
       this.topCourses = dbC.map((c: any) => ({
         name: c.tieuDe || c.TieuDe,
         instructor: (c.giangVien || c.GiangVien)?.[0]?.ten || (c.giangVien || c.GiangVien)?.[0]?.Ten || 'Admin',
         category: (c.theLoai || c.TheLoai)?.ten || (c.theLoai || c.TheLoai)?.Ten || 'Chưa phân loại',
-        price: c.giaGoc || c.GiaGoc || 0
+        price: c.giaGoc || c.GiaGoc || 0,
+        adminRevenue: c.adminRevenue || c.AdminRevenue || 0
       }));
     });
   }

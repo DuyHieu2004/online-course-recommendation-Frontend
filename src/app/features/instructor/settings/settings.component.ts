@@ -62,6 +62,38 @@ import { FormsModule } from '@angular/forms';
           </div>
         </div>
 
+        <!-- Document Upload Column for Instructor Approval -->
+        <div class="section card mt-20" style="grid-column: 1 / -1;">
+          <h3 class="section-title"><i class="fa-solid fa-file-contract"></i> Chứng thực Giảng viên (Hồ sơ / Bằng cấp)</h3>
+          
+          <div class="alert-warning" *ngIf="authService.currentUser()?.status === 'Chờ duyệt'" style="margin-bottom: 16px;">
+            <strong>Tài khoản đang chờ duyệt!</strong> Bạn cần tải lên tài liệu xác minh chuyên môn (CV, Bằng cấp, Chứng chỉ) để Ban Quản Trị Hệ Thống phê duyệt trước khi có thể tạo và bán khóa học.
+          </div>
+          <div class="alert-success" *ngIf="authService.currentUser()?.status === 'Hoạt động'" style="margin-bottom: 16px; background: #D1FAE5; color: #059669; border: 1px solid #A7F3D0; padding: 16px; border-radius: var(--radius-sm);">
+            <strong>Đã phê duyệt!</strong> Tài khoản Giảng viên của bạn đã được xác minh.
+          </div>
+
+          <div class="form-group">
+            <label>Tài liệu đính kèm hiện tại</label>
+            <div *ngIf="degreeUrl">
+              <a [href]="degreeUrl" target="_blank" style="color: var(--primary); text-decoration: underline;">
+                <i class="fa-solid fa-file-pdf"></i> Xem Hồ sơ đã tải lên
+              </a>
+            </div>
+            <div *ngIf="!degreeUrl" style="color: var(--gray-400); font-style: italic;">
+              Chưa có tài liệu nào được tải lên.
+            </div>
+          </div>
+
+          <div class="form-group mt-20">
+            <label class="btn btn-outline">
+              <i class="fa-solid fa-upload"></i> {{ isUploadingDegree ? 'Đang tải lên...' : 'Chọn file và Tải lên (PDF, JPG, PNG)' }}
+              <input type="file" hidden accept=".pdf,image/*" (change)="onDegreeSelected($event)" [disabled]="isUploadingDegree">
+            </label>
+            <span class="save-success" *ngIf="degreeSuccess" style="margin-left: 12px;"><i class="fa-solid fa-check"></i> Đã tải lên và Gửi duyệt thành công!</span>
+          </div>
+        </div>
+
         <!-- Payout Settings Column -->
         <div class="settings-sidebar">
           <div class="section card">
@@ -157,16 +189,19 @@ import { FormsModule } from '@angular/forms';
 })
 export class InstructorSettingsComponent implements OnInit {
   private api = inject(ApiService);
-  private auth = inject(AuthService);
+  public authService = inject(AuthService); // changed to public
 
   fullName = '';
   jobTitle = '';
   bio = '';
   avatarUrl = '';
+  degreeUrl = '';
 
   isSaving = false;
   saveSuccess = false;
   showBank = false;
+  isUploadingDegree = false;
+  degreeSuccess = false;
 
   ngOnInit() {
     this.loadProfile();
@@ -180,12 +215,13 @@ export class InstructorSettingsComponent implements OnInit {
           this.fullName = res.ten || '';
           this.bio = res.tieuSu || '';
           this.avatarUrl = res.linkAnhDaiDien || '';
+          this.degreeUrl = res.hoSoBangCap || '';
         }
       },
       error: (err) => {
         console.error('Lỗi khi tải profile', err);
         // Fallback to auth token claim just in case
-        this.fullName = this.auth.currentUser()?.userName || '';
+        this.fullName = this.authService.currentUser()?.userName || '';
       }
     });
   }
@@ -198,6 +234,25 @@ export class InstructorSettingsComponent implements OnInit {
         this.avatarUrl = e.target.result;
       };
       reader.readAsDataURL(file);
+    }
+  }
+
+  onDegreeSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.isUploadingDegree = true;
+      this.api.uploadDegree(file).subscribe({
+        next: (res) => {
+          this.isUploadingDegree = false;
+          this.degreeSuccess = true;
+          this.degreeUrl = res.linkHoSo;
+          setTimeout(() => this.degreeSuccess = false, 4000);
+        },
+        error: (err) => {
+          this.isUploadingDegree = false;
+          alert(err.error?.message || 'Lỗi khi tải tài liệu.');
+        }
+      });
     }
   }
 
@@ -216,9 +271,9 @@ export class InstructorSettingsComponent implements OnInit {
         this.saveSuccess = true;
 
         // Update global auth state immediately
-        const user = this.auth.currentUser();
+        const user = this.authService.currentUser();
         if (user) {
-          this.auth.updateLocalUser({
+          this.authService.updateLocalUser({
             ...user,
             userName: this.fullName,
             avatar: this.avatarUrl

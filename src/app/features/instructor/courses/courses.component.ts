@@ -81,7 +81,7 @@ import { ApiService } from '../../../core/services/api.service';
               <button class="btn btn-outline btn-sm action-btn" (click)="viewLessons(course.maKhoaHoc || course.id)">
                 <i class="fa-solid fa-video"></i> Bài giảng
               </button>
-              <button class="btn btn-icon btn-sm" title="Xóa khóa học" style="color: var(--danger); border-color: transparent;" (click)="deleteCourse(course)">
+              <button *ngIf="course.tinhTrang !== 'Published'" class="btn btn-icon btn-sm" title="Xóa khóa học" style="color: var(--danger); border-color: transparent;" (click)="deleteCourse(course)">
                 <i class="fa-solid fa-trash" *ngIf="!course._deleting"></i>
                 <i class="fa-solid fa-circle-notch fa-spin" *ngIf="course._deleting"></i>
               </button>

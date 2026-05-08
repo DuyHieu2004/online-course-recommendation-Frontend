@@ -12,87 +12,92 @@ import Swal from 'sweetalert2';
   imports: [CommonModule],
   template: `
     <div class="course-card card" (click)="goToDetail()">
-      <div class="card-image" [class.dark-variant]="darkMode">
-        <img *ngIf="course.image && course.image.length > 5" [src]="course.image" (error)="course.image = ''" alt="course" style="width: 100%; height: 100%; object-fit: cover;">
-        <div *ngIf="!course.image || course.image.length <= 5" class="card-emoji" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%"><i class="fa-solid fa-box" style="font-size: 32px"></i></div>
-        <span *ngIf="course.aiMatch" class="ai-badge badge-primary">
-          🤖 AI {{ course.aiMatch }}%
-        </span>
+      <div class="card-image" [class.has-img]="course.image && course.image.length > 5" [style.background-image]="(course.image && course.image.length > 5) ? 'url(' + course.image + ')' : ''">
+        <i class="fa-solid fa-laptop-code" *ngIf="!course.image || course.image.length <= 5"></i>
+        
+        <div class="match-badge" *ngIf="course.aiMatch">
+          <span class="sparkle-icon">✨</span> {{ course.aiMatch }}% Phù hợp
+        </div>
       </div>
       <div class="card-body">
         <h3 class="card-title">{{ course.title }}</h3>
-        <p class="card-instructor">{{ course.instructor }}</p>
+        <p class="card-instructor"><i class="fa-solid fa-chalkboard-user"></i> {{ course.instructor }}</p>
         <div class="card-rating" *ngIf="showRating">
-          <span class="stars">★★★★★</span>
+          <span class="stars">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i>
+          </span>
           <span class="rating-text">{{ course.rating }} ({{ course.reviewCount }})</span>
         </div>
-        <div class="card-price">
-          <span class="price">{{ course.price | number }}đ</span>
-          <span class="original-price" *ngIf="course.price !== undefined && course.originalPrice !== undefined && course.originalPrice > course.price">{{ course.originalPrice | number }}đ</span>
+        <div class="card-footer">
+          <div class="price-box">
+             <span class="price">{{ course.price | number }}đ</span>
+             <span class="original-price" *ngIf="course.price !== undefined && course.originalPrice !== undefined && course.originalPrice > course.price">{{ course.originalPrice | number }}đ</span>
+          </div>
+          <button *ngIf="showCartBtn && !isEnrolled && !isInCart" class="btn-add-cart" (click)="addToCart($event)">
+            <i class="fa-solid fa-cart-plus"></i> Thêm
+          </button>
+          <button *ngIf="showCartBtn && isInCart && !isEnrolled" class="btn-add-cart disabled" (click)="$event.stopPropagation()">
+            <i class="fa-solid fa-check"></i> Đã Thêm
+          </button>
+          <button *ngIf="showCartBtn && isEnrolled" class="btn-add-cart enrolled" (click)="goToDetail(); $event.stopPropagation()">
+            <i class="fa-solid fa-play"></i> Đã Sở Hữu
+          </button>
         </div>
-        <button *ngIf="showCartBtn" class="btn btn-primary btn-sm cart-btn" (click)="addToCart($event)">+ Giỏ hàng</button>
       </div>
     </div>
   `,
   styles: [`
     .course-card {
-      cursor: pointer;
+      background: #ffffff;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
       overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
       display: flex;
       flex-direction: column;
-      border-radius: 20px;
-      background: white;
-      border: 1px solid #f1f5f9;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
       height: 100%;
     }
     .course-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-      border-color: #e2e8f0;
+      transform: translateY(-6px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+      border-color: #cbd5e1;
     }
     .card-image {
       height: 180px;
-      background: #f8fafc;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 56px;
+      color: #94a3b8;
       position: relative;
-      overflow: hidden;
+      background-size: cover;
+      background-position: center;
     }
-    .card-image.dark-variant {
-      background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-    }
-    .card-image img { 
-      transition: transform 0.5s ease; 
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .course-card:hover .card-image img { transform: scale(1.05); }
-    
-    .card-emoji { font-size: 64px; }
-    .ai-badge {
+    .match-badge {
       position: absolute;
-      top: 12px;
-      left: 12px;
-      background: rgba(255,255,255,0.9);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      color: #eb4899;
-      padding: 6px 12px;
-      border-radius: 100px;
-      font-size: 11px;
-      font-weight: 800;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      z-index: 2;
+      bottom: -16px;
+      left: 20px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+      color: #ffffff;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
+      border: 2px solid #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 10;
     }
     .card-body {
-      padding: 20px;
+      padding: 32px 20px 24px;
+      flex: 1;
       display: flex;
       flex-direction: column;
-      flex: 1;
     }
     .card-title {
       font-size: 16px;
@@ -109,7 +114,9 @@ import Swal from 'sweetalert2';
       font-size: 13px;
       color: #64748b;
       margin-bottom: 12px;
-      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .card-rating {
       display: flex;
@@ -117,42 +124,64 @@ import Swal from 'sweetalert2';
       gap: 6px;
       margin-bottom: 16px;
     }
-    .stars { color: #f59e0b; font-size: 13px; letter-spacing: 2px;}
+    .stars { color: #f59e0b; font-size: 12px; letter-spacing: 1px; }
     .rating-text { font-size: 13px; color: #64748b; font-weight: 600;}
-    
-    .card-price {
+    .card-footer {
+      margin-top: auto;
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-top: auto;
-      padding-top: 16px;
+      justify-content: space-between;
       border-top: 1px solid #f1f5f9;
+      padding-top: 16px;
+    }
+    .price-box {
+      display: flex;
+      flex-direction: column;
     }
     .price {
       font-size: 18px;
       font-weight: 800;
-      color: #4f46e5;
+      color: #ea580c;
     }
     .original-price {
-      font-size: 14px;
+      font-size: 13px;
       color: #94a3b8;
       text-decoration: line-through;
     }
-    .cart-btn {
-      margin-top: 16px;
-      width: 100%;
-      border-radius: 12px;
-      padding: 10px;
+    .btn-add-cart {
+      background: #ffffff;
+      color: #ea580c;
+      border: 2px solid #fff7ed;
+      padding: 8px 16px;
+      border-radius: 10px;
       font-weight: 700;
-      background: #f1f5f9;
-      color: #4f46e5;
-      border: none;
-      transition: all 0.2s;
+      font-size: 13px;
       cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .cart-btn:hover {
-      background: #4f46e5;
-      color: white;
+    .btn-add-cart:hover:not(.disabled):not(.enrolled) {
+      background: #ea580c;
+      color: #ffffff;
+      border-color: #ea580c;
+      box-shadow: 0 4px 10px rgba(234, 88, 12, 0.2);
+    }
+    .btn-add-cart.disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      border-color: #e2e8f0;
+      cursor: default;
+    }
+    .btn-add-cart.enrolled {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+    }
+    .btn-add-cart.enrolled:hover {
+      background: #059669;
+      border-color: #059669;
     }
   `]
 })
@@ -165,6 +194,14 @@ export class CourseCardComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
   private dataService = inject(DataService);
+
+  get isInCart(): boolean {
+    return this.dataService.cartItems().some(item => item.course?.id === this.course?.id);
+  }
+
+  get isEnrolled(): boolean {
+    return this.dataService.enrolledCourses().some(ec => ec.course?.id === this.course?.id);
+  }
 
   goToDetail() {
     if (this.course?.id) {

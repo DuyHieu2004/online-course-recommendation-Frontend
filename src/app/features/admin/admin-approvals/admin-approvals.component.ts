@@ -15,17 +15,25 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 
       <!-- Stats -->
       <div class="approval-stats">
-        <div class="as-item card"><span class="as-val orange">{{ courses.length }}</span><span>Hiển thị</span></div>
-        <div class="as-item card"><span class="as-val primary">{{ totalCourses }}</span><span>Tổng số</span></div>
-        <div class="as-item card"><span class="as-val danger">{{ rejectedCount }}</span><span>Từ chối</span></div>
+        <div class="as-item card"><span class="as-val orange">{{ pendingCount }}</span><span>Chờ duyệt</span></div>
+        <div class="as-item card"><span class="as-val primary">{{ publishedCount }}</span><span>Đã xuất bản</span></div>
+        <div class="as-item card"><span class="as-val danger">{{ rejectedCount }}</span><span>Bị từ chối</span></div>
       </div>
 
       <!-- Tabs -->
       <div class="approval-tabs">
-        <button class="tab" [class.active]="activeTab === 'all'" (click)="switchTab('all')">Tất cả ({{ totalCourses }})</button>
-        <button class="tab" [class.active]="activeTab === 'published'" (click)="switchTab('published')">Đã duyệt</button>
-        <button class="tab" [class.active]="activeTab === 'pending'" (click)="switchTab('pending')">Chờ duyệt</button>
-        <button class="tab" [class.active]="activeTab === 'rejected'" (click)="switchTab('rejected')">Từ chối</button>
+        <button class="tab" [class.active]="activeTab === 'all'" (click)="switchTab('all')">
+          Tất cả <span class="tab-count">({{ totalCountAll }})</span>
+        </button>
+        <button class="tab" [class.active]="activeTab === 'published'" (click)="switchTab('published')">
+          Đã duyệt <span class="tab-count">({{ publishedCount }})</span>
+        </button>
+        <button class="tab" [class.active]="activeTab === 'pending'" (click)="switchTab('pending')">
+          Chờ duyệt <span class="tab-count">({{ pendingCount }})</span>
+        </button>
+        <button class="tab" [class.active]="activeTab === 'rejected'" (click)="switchTab('rejected')">
+          Từ chối <span class="tab-count">({{ rejectedCount }})</span>
+        </button>
       </div>
 
       <!-- Loading -->
@@ -140,6 +148,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
     .ac-status-badge.draft { background: rgba(253,126,20,0.9); color: white; }
     .ac-status-badge.rejected { background: rgba(220,53,69,0.9); color: white; }
     .ac-status-badge.pending { background: rgba(91,99,211,0.9); color: white; }
+    .tab-count { font-size: 11px; opacity: 0.7; margin-left: 4px; font-weight: 400; }
     .ac-content { flex: 1; }
     .ac-content h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
     .ac-meta { font-size: 13px; color: var(--gray-500); margin-bottom: 8px; }
@@ -177,8 +186,12 @@ export class AdminApprovalsComponent implements OnInit {
   private api = inject(ApiService);
 
   courses: any[] = [];
-  totalCourses = 0;
+  totalCourses = 0; // Số lượng theo tab hiện tại
+  totalCountAll = 0;
+  publishedCount = 0;
+  pendingCount = 0;
   rejectedCount = 0;
+  
   isLoading = false;
   activeTab = 'all';
   currentPage = 1;
@@ -212,7 +225,7 @@ export class AdminApprovalsComponent implements OnInit {
       status: statusMap[this.activeTab] || undefined
     }).subscribe({
       next: (res) => {
-        const data = Array.isArray(res) ? res : (res.data || []);
+        const data = res.data || [];
         this.totalCourses = res.totalCount || data.length;
         this.courses = data.map((c: any) => ({
           id: c.maKhoaHoc,
@@ -229,39 +242,25 @@ export class AdminApprovalsComponent implements OnInit {
           _saving: false
         }));
         this.isLoading = false;
+        
+        // Luôn load lại tất cả các count để sync giao diện
+        this.loadAllCounts();
       },
-      error: () => {
+      error: (err) => {
+        this.showToast('Không thể tải dữ liệu từ server. Vui lòng thử lại sau.', 'error');
         this.isLoading = false;
-        // Fallback: nếu admin/all chưa deploy, dùng public endpoint
-        this.api.getCourses({ page: page, pageSize: 10 }).subscribe({
-          next: (res) => {
-            const data = Array.isArray(res) ? res : (res.data || []);
-            this.totalCourses = res.totalCount || data.length;
-            this.courses = data.map((c: any) => ({
-              id: c.maKhoaHoc,
-              title: c.tieuDe,
-              description: c.moTa,
-              instructor: c.giangVien?.[0]?.ten || 'Admin',
-              category: c.theLoai?.ten || 'Chưa phân loại',
-              rating: c.tbdanhGia || 0,
-              price: c.giaGoc || 0,
-              image: c.anhUrl || '',
-              chapters: c.soLuongChuong || 0,
-              students: c.soHocVien || 0,
-              status: c.tinhTrang || 'Published',
-              _saving: false
-            }));
-          }
-        });
       }
     });
-
-    // Lấy số lượng bị từ chối
-    this.api.getAdminCourses({ page: 1, pageSize: 1, status: 'Rejected' }).subscribe({
-      next: (res) => this.rejectedCount = res.totalCount || 0,
-      error: () => {}
-    });
   }
+
+  loadAllCounts() {
+    // Gọi song song để lấy count cho các tab
+    this.api.getAdminCourses({ page: 1, pageSize: 1 }).subscribe(r => this.totalCountAll = r.totalCount || 0);
+    this.api.getAdminCourses({ page: 1, pageSize: 1, status: 'Published' }).subscribe(r => this.publishedCount = r.totalCount || 0);
+    this.api.getAdminCourses({ page: 1, pageSize: 1, status: 'Pending' }).subscribe(r => this.pendingCount = r.totalCount || 0);
+    this.api.getAdminCourses({ page: 1, pageSize: 1, status: 'Rejected' }).subscribe(r => this.rejectedCount = r.totalCount || 0);
+  }
+
 
   onPageChange(page: number) {
     this.loadCourses(page);

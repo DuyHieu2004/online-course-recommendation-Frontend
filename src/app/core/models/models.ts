@@ -110,8 +110,10 @@ export interface User {
   color?: string;
   joinDate?: string;
   status?: string;
+  originalStatus?: string;
   coursesCount?: number;
   rating?: number;
+  hoSoBangCap?: string;
 
   // Transient UI state
   _saving?: boolean;

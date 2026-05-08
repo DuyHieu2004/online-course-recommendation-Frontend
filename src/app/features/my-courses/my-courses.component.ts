@@ -108,7 +108,7 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
 
       <!-- AI Suggestions -->
       <section class="section">
-        <h2>🤖 AI gợi ý học tiếp</h2>
+        <h2> AI gợi ý học tiếp</h2>
         <div class="course-grid">
           <app-course-card *ngFor="let c of dataService.courses().slice(0, 4)" [course]="c" [showCartBtn]="true" />
         </div>

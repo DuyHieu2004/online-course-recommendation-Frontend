@@ -35,7 +35,7 @@ import { AuthService } from '../../core/services/auth.service';
           </a>
           <a routerLink="/admin/courses/approvals" routerLinkActive="active" class="nav-item">
             <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
-            <span class="nav-text">Duyệt KH</span>
+            <span class="nav-text">Duyệt khóa học</span>
           </a>
           <a routerLink="/admin/promotions" routerLinkActive="active" class="nav-item">
             <span class="nav-icon"><i class="fa-solid fa-gift"></i></span>
@@ -101,7 +101,7 @@ import { AuthService } from '../../core/services/auth.service';
     /* ===== Sidebar ===== */
     .admin-sidebar {
       width: 260px;
-      background: linear-gradient(180deg, #1A1D3A 0%, #12142B 100%);
+      background: var(--white);
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
@@ -111,27 +111,33 @@ import { AuthService } from '../../core/services/auth.service';
       bottom: 0;
       z-index: 50;
       overflow-y: auto;
+      border-right: 1px solid var(--gray-200);
+      box-shadow: 2px 0 10px rgba(0,0,0,0.02);
     }
 
     .sidebar-brand {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 8px;
     }
 
     .brand-link {
       display: flex;
       align-items: center;
       gap: 10px;
-      color: var(--white);
-      font-size: 20px;
+      color: #0f172a;
+      font-size: 22px;
       font-weight: 800;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .brand-icon {
       width: 36px;
       height: 36px;
-      background: linear-gradient(135deg, #7B82E0 0%, #5B63D3 100%);
+      background: var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -139,27 +145,28 @@ import { AuthService } from '../../core/services/auth.service';
       font-size: 18px;
       font-weight: 900;
       color: white;
-      box-shadow: 0 4px 12px rgba(91, 99, 211, 0.4);
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
     }
 
     .brand-badge {
       display: inline-block;
       font-size: 10px;
       font-weight: 700;
-      color: rgba(123, 130, 224, 0.9);
-      background: rgba(91, 99, 211, 0.12);
-      padding: 3px 10px;
+      color: var(--primary);
+      background: var(--primary-bg);
+      padding: 4px 12px;
       border-radius: 20px;
-      letter-spacing: 0.5px;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-left: 45px;
     }
 
     .sidebar-section-label {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
-      color: rgba(255, 255, 255, 0.25);
-      letter-spacing: 1.5px;
-      padding: 20px 24px 8px;
+      color: var(--gray-400);
+      letter-spacing: 1px;
+      padding: 16px 24px 8px;
       text-transform: uppercase;
     }
 
@@ -167,56 +174,56 @@ import { AuthService } from '../../core/services/auth.service';
     .admin-nav {
       display: flex;
       flex-direction: column;
-      padding: 0 12px;
-      gap: 2px;
+      padding: 0 16px;
+      gap: 4px;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 11px 14px;
+      padding: 12px 16px;
       border-radius: 10px;
-      color: rgba(255, 255, 255, 0.55);
+      color: var(--gray-600);
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+      transition: all 0.2s ease;
       position: relative;
     }
 
     .nav-item:hover {
-      color: rgba(255, 255, 255, 0.9);
-      background: rgba(255, 255, 255, 0.06);
+      color: var(--gray-800);
+      background: var(--gray-50);
     }
 
     .nav-item.active {
-      color: #FFFFFF;
-      background: linear-gradient(135deg, rgba(91, 99, 211, 0.35) 0%, rgba(123, 130, 224, 0.15) 100%);
-      box-shadow: 0 2px 12px rgba(91, 99, 211, 0.15);
+      color: var(--primary);
+      background: var(--primary-bg);
     }
 
     .nav-item.active .nav-icon {
-      color: #9DA4F0;
+      color: var(--primary);
     }
 
     .nav-item.active::before {
       content: '';
       position: absolute;
-      left: 0;
+      left: -16px;
       top: 50%;
       transform: translateY(-50%);
-      width: 3px;
-      height: 20px;
-      background: linear-gradient(180deg, #7B82E0, #5B63D3);
+      width: 4px;
+      height: 24px;
+      background: var(--primary);
       border-radius: 0 4px 4px 0;
     }
 
     .nav-icon {
       width: 20px;
       text-align: center;
-      font-size: 15px;
-      transition: color 0.25s ease;
+      font-size: 16px;
+      color: var(--gray-400);
+      transition: color 0.2s ease;
     }
 
     .nav-text {
@@ -226,31 +233,32 @@ import { AuthService } from '../../core/services/auth.service';
     /* ===== Sidebar Bottom User Card ===== */
     .sidebar-bottom {
       margin-top: auto;
-      padding: 16px 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 20px 16px;
+      border-top: 1px solid var(--gray-100);
     }
 
     .sidebar-user-card {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
+      gap: 12px;
+      padding: 12px;
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
     }
 
     .sidebar-user-avatar {
       width: 36px;
       height: 36px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #5B63D3 0%, #7B82E0 100%);
+      background: var(--primary-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
+      color: var(--primary);
       font-weight: 800;
-      font-size: 12px;
+      font-size: 13px;
       flex-shrink: 0;
     }
 
@@ -262,33 +270,35 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .sidebar-user-name {
-      color: var(--white);
-      font-weight: 600;
+      color: var(--gray-800);
+      font-weight: 700;
       font-size: 13px;
     }
 
     .sidebar-user-role {
-      color: rgba(255, 255, 255, 0.35);
-      font-size: 11px;
+      color: var(--gray-500);
+      font-size: 12px;
     }
 
     .sidebar-logout {
       width: 32px;
       height: 32px;
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.06);
-      color: rgba(255, 255, 255, 0.4);
+      background: var(--white);
+      color: var(--gray-500);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       transition: all 0.2s ease;
-      font-size: 13px;
+      font-size: 14px;
+      border: 1px solid transparent;
     }
 
     .sidebar-logout:hover {
-      background: rgba(220, 53, 69, 0.2);
-      color: #FF6B7A;
+      background: var(--danger-light);
+      color: var(--danger);
+      border-color: var(--danger-light);
     }
 
     /* ===== Main Area ===== */
@@ -417,19 +427,19 @@ import { AuthService } from '../../core/services/auth.service';
       width: 36px;
       height: 36px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #5B63D3 0%, #7B82E0 100%);
+      background: var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-weight: 800;
-      font-size: 12px;
+      font-size: 13px;
     }
 
     .topbar-username {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 14px;
-      color: var(--gray-700);
+      color: var(--gray-800);
     }
 
     /* ===== Content ===== */
