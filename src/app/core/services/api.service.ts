@@ -334,10 +334,10 @@ export class ApiService {
   }
 
   getUserNotificationSettings(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/users/debugroute`);
+    return this.http.get(`${this.apiUrl}/users/notification-settings`);
   }
 
   updateUserNotificationSettings(settings: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/users/debugroute`, settings);
+    return this.http.post(`${this.apiUrl}/users/notification-settings`, settings);
   }
 }
