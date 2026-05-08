@@ -329,6 +329,10 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/settings`, data);
   }
 
+  sendTestEmail(smtp: any, toEmail: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/settings/test-email`, { smtp, toEmail });
+  }
+
   getUserNotificationSettings(): Observable<any> {
     return this.http.get(`${this.apiUrl}/users/debugroute`);
   }

@@ -300,24 +300,33 @@ import Swal from 'sweetalert2';
             </div>
 
             <!-- Template Editor -->
-            <div class="section-card" *ngIf="editingTemplate" style="border-top: 4px solid var(--primary); animation: slideInUp 0.3s ease;">
-              <div class="section-card-header">
-                <h2>Chỉnh sửa mẫu: {{ editingTemplate.label }}</h2>
-                <button class="close-btn" (click)="editingTemplate = null" style="background:transparent; border:none; cursor:pointer; font-size: 18px; color: var(--gray-400);">
+            <div class="section-card editor-card" *ngIf="editingTemplate" id="email-template-editor">
+              <div class="section-card-header" style="background: var(--gray-50);">
+                <div class="editor-title">
+                  <i class="fa-solid fa-pen-nib" style="color: var(--primary);"></i>
+                  <h2 style="margin-left: 10px;">Đang chỉnh sửa: {{ editingTemplate.label }}</h2>
+                </div>
+                <button class="close-btn" (click)="editingTemplate = null">
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               </div>
               <div class="section-card-body">
                 <div class="form-group">
                   <label>Tiêu đề Email</label>
-                  <input type="text" class="form-input" [(ngModel)]="currentTemplate.subject">
+                  <input type="text" class="form-input" [(ngModel)]="currentTemplate.subject" placeholder="Nhập tiêu đề email...">
                 </div>
                 <div class="form-group">
-                  <label>Nội dung (HTML hỗ trợ)</label>
-                  <textarea class="form-input form-textarea" style="min-height: 200px;" [(ngModel)]="currentTemplate.body"></textarea>
+                  <label>Nội dung Email (HTML)</label>
+                  <textarea class="form-input form-textarea" 
+                            style="min-height: 250px; font-family: monospace; line-height: 1.6;" 
+                            [(ngModel)]="currentTemplate.body"
+                            placeholder="Nhập nội dung email (hỗ trợ mã HTML)..."></textarea>
                 </div>
                 <div class="template-placeholders">
-                  <strong>Placeholders:</strong>
+                  <div class="placeholder-header">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <strong>Các từ khóa thay thế (Placeholders):</strong>
+                  </div>
                   <div class="placeholder-chips">
                     <span class="chip" title="Tên người nhận">{{ '{{' }}userName{{ '}}' }}</span>
                     <span class="chip" title="Tên khóa học">{{ '{{' }}courseName{{ '}}' }}</span>
@@ -325,9 +334,12 @@ import Swal from 'sweetalert2';
                     <span class="chip" title="Link truy cập">{{ '{{' }}link{{ '}}' }}</span>
                   </div>
                 </div>
-                <div class="form-actions" style="margin-top: 20px; border-top: none; padding-top: 0;">
+                <div class="editor-actions">
+                  <button class="header-action-btn" (click)="editingTemplate = null">
+                    Hủy bỏ
+                  </button>
                   <button class="header-action-btn primary" (click)="applyTemplate()">
-                    <i class="fa-solid fa-check"></i> Lưu mẫu này
+                    <i class="fa-solid fa-check"></i> Xác nhận thay đổi mẫu
                   </button>
                 </div>
               </div>
@@ -366,7 +378,7 @@ import Swal from 'sweetalert2';
                     <span class="form-help">Mật khẩu ứng dụng dành cho Gmail hoặc SMTP server</span>
                   </div>
                 </div>
-                <button class="test-btn">
+                <button class="test-btn" (click)="sendTestEmail()">
                   <i class="fa-solid fa-paper-plane"></i> Gửi email thử nghiệm
                 </button>
               </div>
@@ -537,9 +549,7 @@ import Swal from 'sweetalert2';
     .settings-section { display: flex; flex-direction: column; gap: 20px; }
     .section-card {
       background: var(--white); border-radius: 16px; border: 1px solid var(--gray-200); overflow: hidden;
-      animation: fadeSlideIn 0.4s ease forwards; opacity: 0;
     }
-    @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .section-card-header {
       display: flex; justify-content: space-between; align-items: center;
       padding: 20px 24px; border-bottom: 1px solid var(--gray-100);
@@ -674,24 +684,44 @@ import Swal from 'sweetalert2';
       border: 1px solid var(--gray-200);
     }
     .ai-stat-value { display: block; font-size: 20px; font-weight: 800; color: var(--gray-800); }
-    .ai-stat-label { font-size: 11px; color: var(--gray-400); }
+    .notif-actions { display: flex; align-items: center; gap: 20px; }
+    .edit-template-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 10px;
+      background: rgba(91,99,211,0.06); color: var(--primary);
+      border: 1px solid rgba(91,99,211,0.2);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .edit-template-btn i { font-size: 14px; }
+    .edit-template-btn:hover {
+      background: var(--primary); color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(91,99,211,0.25);
+    }
+    .edit-template-btn:active { transform: translateY(0); }
+    
+    .template-placeholders { margin-top: 12px; padding: 16px; background: var(--gray-50); border-radius: 12px; border: 1px solid var(--gray-200); }
+    .placeholder-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .chip {
+      padding: 5px 12px; background: white; border: 1px solid var(--gray-200);
+      border-radius: 8px; font-size: 12px; font-family: 'JetBrains Mono', monospace; 
+      color: var(--primary); font-weight: 600;
+      cursor: help; transition: all 0.2s;
+    }
+    .chip:hover { border-color: var(--primary); background: rgba(91,99,211,0.02); }
 
     /* ===== Template Editor ===== */
-    .notif-actions { display: flex; align-items: center; gap: 16px; }
-    .edit-template-btn {
-      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--primary);
-      background: transparent; color: var(--primary); font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+    .editor-card {
+      border: 2px solid var(--primary) !important;
+      margin-top: 10px;
+      margin-bottom: 20px;
     }
-    .edit-template-btn:hover { background: var(--primary); color: white; }
-    .template-placeholders { margin-top: 12px; padding: 12px; background: var(--gray-50); border-radius: 10px; }
-    .template-placeholders strong { display: block; font-size: 12px; margin-bottom: 8px; color: var(--gray-600); }
-    .placeholder-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip {
-      padding: 4px 10px; background: white; border: 1px solid var(--gray-200);
-      border-radius: 6px; font-size: 11px; font-family: monospace; color: var(--primary);
-      cursor: help;
-    }
+    .editor-title { display: flex; align-items: center; }
+    .close-btn { background: transparent; border: none; cursor: pointer; font-size: 20px; color: var(--gray-400); }
+    .editor-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--gray-100); }
+    .placeholder-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--gray-600); }
+    .placeholder-header i { font-size: 14px; color: var(--primary); }
     @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
     .api-key-input { position: relative; }
@@ -790,8 +820,25 @@ export class AdminSettingsComponent implements OnInit {
   editTemplate(notif: any) {
     this.editingTemplate = notif;
     this.currentTemplate = { 
-      ...(this.allTemplates[notif.label] || { subject: `Thông báo: ${notif.label}`, body: '<p>Chào {{userName}},</p><p>Đây là thông báo về {{courseName}}.</p>' }) 
+      ...(this.allTemplates[notif.label] || { 
+        subject: `[EduLearn] Thông báo: ${notif.label}`, 
+        body: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+  <h2 style="color: #5B63D3;">Chào {{userName}},</h2>
+  <p>Đây là thông báo từ hệ thống về: <strong>${notif.label}</strong></p>
+  <p>Nội dung chi tiết sẽ được hiển thị ở đây. Bạn có thể sử dụng các từ khóa như {{courseName}} để cá nhân hóa nội dung.</p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="font-size: 12px; color: #888;">Trân trọng,<br>Đội ngũ EduLearn</p>
+</div>` 
+      }) 
     };
+    
+    // Cuộn xuống khu vực chỉnh sửa
+    setTimeout(() => {
+      const editor = document.getElementById('email-template-editor');
+      if (editor) {
+        editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   }
 
   applyTemplate() {
@@ -824,5 +871,36 @@ export class AdminSettingsComponent implements OnInit {
         this.showSaveToast = true;
       }
     });
+  }
+
+  async sendTestEmail() {
+    const { value: email } = await Swal.fire({
+      title: 'Gửi email thử nghiệm',
+      input: 'email',
+      inputLabel: 'Nhập địa chỉ email nhận',
+      inputPlaceholder: 'email@example.com',
+      showCancelButton: true,
+      confirmButtonText: 'Gửi ngay',
+      cancelButtonText: 'Hủy'
+    });
+
+    if (email) {
+      Swal.fire({
+        title: 'Đang gửi...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      this.apiService.sendTestEmail(this.smtpConfig, email).subscribe({
+        next: (res: any) => {
+          Swal.fire('Thành công', res.message, 'success');
+        },
+        error: (err: any) => {
+          Swal.fire('Thất bại', err.error?.message || 'Không thể gửi email', 'error');
+        }
+      });
+    }
   }
 }
