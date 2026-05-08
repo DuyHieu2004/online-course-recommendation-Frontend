@@ -23,6 +23,11 @@ import { FormsModule } from '@angular/forms';
           <option value="ALL">Tất cả khóa học</option>
           <option *ngFor="let course of uniqueCourses" [value]="course">{{ course }}</option>
         </select>
+        <select class="form-select" [(ngModel)]="deadlineFilter" (change)="filterStudents()" style="min-width: 180px;">
+          <option value="ALL">Tất cả thời hạn</option>
+          <option value="OVERDUE">Đang trễ hạn</option>
+          <option value="ONTIME">Trong hạn / Chưa có</option>
+        </select>
         <button class="btn btn-outline" (click)="loadStudents()"><i class="fa-solid fa-rotate-right"></i> Làm mới</button>
       </div>
 
@@ -40,6 +45,7 @@ import { FormsModule } from '@angular/forms';
               <th>Học viên</th>
               <th>Khóa học</th>
               <th>Ngày tham gia</th>
+              <th>Ngày kết thúc</th>
               <th>Tiến độ</th>
               <th>Trạng thái</th>
               <th>Hành động</th>
@@ -67,6 +73,12 @@ import { FormsModule } from '@angular/forms';
                 {{ item.khoaHoc?.tieuDe }}
               </td>
               <td>{{ item.ngayThamGia | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <span *ngIf="item.ngayKetThuc" [class.text-danger]="isExpired(item.ngayKetThuc)">
+                  {{ item.ngayKetThuc | date:'dd/MM/yyyy' }}
+                </span>
+                <span *ngIf="!item.ngayKetThuc" class="text-muted">Không có</span>
+              </td>
               <td>
                 <div class="progress-cell">
                   <div class="progress-bar">
@@ -163,6 +175,8 @@ import { FormsModule } from '@angular/forms';
     
     .pagination-footer { display: flex; justify-content: space-between; align-items: center; }
     .text-sm { font-size: 13px; color: var(--gray-500); }
+    .text-danger { color: #dc3545; font-weight: bold; }
+    .text-muted { color: var(--gray-400); font-style: italic; }
     .page-controls { display: flex; gap: 6px; }
     .page-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
   `]
@@ -182,6 +196,7 @@ export class InstructorStudentsComponent implements OnInit {
   // Filters
   searchTerm = '';
   courseFilter = 'ALL';
+  deadlineFilter = 'ALL';
   uniqueCourses: string[] = [];
 
   // Consistent color mapping for avatars
@@ -221,6 +236,24 @@ export class InstructorStudentsComponent implements OnInit {
       results = results.filter(item => item.khoaHoc?.tieuDe === this.courseFilter);
     }
 
+    if (this.deadlineFilter !== 'ALL') {
+      if (this.deadlineFilter === 'OVERDUE') {
+        // Trễ hạn: Có ngày kết thúc, tiến độ < 100, và ngày kết thúc < hiện tại
+        results = results.filter(item => 
+          item.phanTramTienDo < 100 && 
+          item.ngayKetThuc && 
+          this.isExpired(item.ngayKetThuc)
+        );
+      } else if (this.deadlineFilter === 'ONTIME') {
+        // Trong hạn / Chưa có: Không trễ hạn
+        results = results.filter(item => 
+          item.phanTramTienDo === 100 || 
+          !item.ngayKetThuc || 
+          !this.isExpired(item.ngayKetThuc)
+        );
+      }
+    }
+
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase().trim();
       results = results.filter(item => 
@@ -236,6 +269,11 @@ export class InstructorStudentsComponent implements OnInit {
     if (newPage < 1) return;
     this.page = newPage;
     this.loadStudents();
+  }
+
+  isExpired(dateString: string): boolean {
+    if (!dateString) return false;
+    return new Date(dateString).getTime() < new Date().getTime();
   }
 
   getInitials(name?: string): string {

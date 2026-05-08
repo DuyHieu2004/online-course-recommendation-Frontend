@@ -147,6 +147,8 @@ export interface EnrolledCourse {
   phanTramTienDo?: number;
   tinhTrang?: string;
   ngayThamGia?: string;
+  ngayKetThuc?: string;
+  endDate?: string;
   khoaHoc?: {
     maKhoaHoc: number;
     tieuDe: string;

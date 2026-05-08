@@ -14,6 +14,7 @@ export const routes: Routes = [
   { path: 'cart', loadComponent: () => import('./features/cart/cart.component').then(m => m.CartComponent) },
   { path: 'checkout', loadComponent: () => import('./features/checkout/checkout.component').then(m => m.CheckoutComponent) },
   { path: 'student/settings', loadComponent: () => import('./features/student/student-settings/student-settings.component').then(m => m.StudentSettingsComponent) },
+  { path: 'purchase-history', loadComponent: () => import('./features/purchase-history/purchase-history.component').then(m => m.PurchaseHistoryComponent) },
   { path: 'instructor/dashboard', loadComponent: () => import('./features/instructor/instructor-dashboard/instructor-dashboard.component').then(m => m.InstructorDashboardComponent) },
   { path: 'instructor/courses', loadComponent: () => import('./features/instructor/courses/courses.component').then(m => m.InstructorCoursesComponent) },
   { path: 'instructor/courses/create', loadComponent: () => import('./features/instructor/create-course/create-course.component').then(m => m.CreateCourseComponent) },

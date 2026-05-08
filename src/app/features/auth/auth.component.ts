@@ -31,7 +31,7 @@ import { AuthService } from '../../core/services/auth.service';
           <div class="form-group">
             <label>Mật khẩu</label>
             <div class="password-wrapper">
-              <input [type]="showLoginPassword() ? 'text' : 'password'" class="form-input" placeholder="••••••••"
+              <input [type]="showLoginPassword() ? 'text' : 'password'" class="form-input" placeholder="Mật khẩu"
                      [(ngModel)]="loginPassword" (keydown.enter)="onLogin()">
               <i class="fa-solid" 
                  [ngClass]="showLoginPassword() ? 'fa-eye' : 'fa-eye-slash'"
@@ -46,8 +46,8 @@ import { AuthService } from '../../core/services/auth.service';
             {{ loading() ? '⏳ Đang xử lý...' : 'Đăng nhập' }}
           </button>
           <div class="divider"><span>hoặc</span></div>
-          <button class="btn social-btn google-btn">G  Tiếp tục với Google</button>
-          <button class="btn social-btn facebook-btn">f  Tiếp tục với Facebook</button>
+          <button class="btn social-btn google-btn">Tiếp tục với Google</button>
+          <button class="btn social-btn facebook-btn">Tiếp tục với Facebook</button>
         </div>
 
         <div *ngIf="activeTab() === 'register'" class="auth-form">
@@ -305,7 +305,7 @@ export class AuthComponent {
   showLoginPassword = signal(false);
   showRegisterPassword = signal(false);
   showConfirmPassword = signal(false);
-  
+
   selectedFile: File | null = null;
 
   closeModal(event: MouseEvent) {
@@ -329,7 +329,7 @@ export class AuthComponent {
     }
 
     this.loading.set(true);
-    this.authService.login(this.loginEmail, this.loginPassword).subscribe({
+    this.authService.login(this.loginEmail.trim(), this.loginPassword.trim()).subscribe({
       next: (res) => {
         this.authService.handleLoginSuccess(res);
         this.loading.set(false);
@@ -363,9 +363,9 @@ export class AuthComponent {
 
     this.loading.set(true);
     this.authService.register(
-      this.registerName, 
-      this.registerEmail, 
-      this.registerPassword, 
+      this.registerName,
+      this.registerEmail,
+      this.registerPassword,
       this.selectedRole(),
       this.selectedFile
     ).subscribe({

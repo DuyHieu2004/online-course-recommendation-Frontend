@@ -23,6 +23,9 @@ export class DataService {
   readonly currentCategoriesPage = signal<number>(1);
   readonly categoriesTotal = signal<number>(0);
   
+  readonly notifications = signal<any[]>([]);
+  readonly unreadNotifications = signal<number>(0);
+  
   readonly currentPromotionsPage = signal<number>(1);
   readonly promotionsTotal = signal<number>(0);
   
@@ -162,7 +165,8 @@ export class DataService {
             instructor: t.khoaHoc?.giangVien || 'Chưa có',
             modules: t.khoaHoc?.soLuongChuong ?? 0
           },
-          progress: t.phanTramTienDo ?? 0
+          progress: t.phanTramTienDo ?? 0,
+          endDate: t.ngayKetThuc
         }));
         this.enrolledCourses.set(mapped);
         this.myCoursesTotal.set(res.totalCount || data.length);
@@ -183,6 +187,28 @@ export class DataService {
           source: 'EduLearn'
         }));
         this.certificates.set(mapped);
+      }
+    });
+  }
+
+  // ========================
+  // NOTIFICATIONS
+  // ========================
+  loadNotifications() {
+    if (!this.auth.isLoggedIn()) return;
+    this.api.getNotifications().subscribe({
+      next: (res) => {
+        this.notifications.set(res.data || []);
+        this.unreadNotifications.set(res.unreadCount || 0);
+      }
+    });
+  }
+
+  markNotificationRead(id: number) {
+    this.api.markNotificationAsRead(id).subscribe({
+      next: () => {
+        this.notifications.update(notifs => notifs.map(n => n.maThongBao === id ? { ...n, daDoc: true } : n));
+        this.unreadNotifications.update(count => Math.max(0, count - 1));
       }
     });
   }

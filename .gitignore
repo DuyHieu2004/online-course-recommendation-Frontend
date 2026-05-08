@@ -45,3 +45,7 @@ Thumbs.db
 
 # Project specific - exclude request docs and temp files
 /request/
+
+# Docker
+Dockerfile
+nginx.conf

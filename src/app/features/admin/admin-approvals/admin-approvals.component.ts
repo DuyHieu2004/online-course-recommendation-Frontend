@@ -66,8 +66,8 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
           <div class="ac-details">
             <span class="detail-chip"><i class="fa-solid fa-coins"></i> {{ course.price | currency:'VND':'symbol':'1.0-0' }}</span>
             <span class="detail-chip"><i class="fa-solid fa-book"></i> {{ course.chapters }} chương</span>
-            <span class="detail-chip"><i class="fa-solid fa-users"></i> {{ course.students }} học viên</span>
           </div>
+          
           <div class="ac-actions">
             <button class="btn btn-success btn-sm" 
                     *ngIf="course.status !== 'Published'"

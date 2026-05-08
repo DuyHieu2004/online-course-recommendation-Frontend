@@ -1,11 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout.component';
+import { ApiService } from '../../../core/services/api.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-admin-settings',
   standalone: true,
-  imports: [CommonModule, AdminLayoutComponent],
+  imports: [CommonModule, FormsModule, AdminLayoutComponent],
   template: `
     <app-admin-layout>
       <!-- Page Header -->
@@ -18,10 +21,10 @@ import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout
           </p>
         </div>
         <div class="page-header-right">
-          <button class="header-action-btn">
-            <i class="fa-solid fa-rotate-left"></i> Đặt lại
+          <button class="header-action-btn" (click)="loadSettings()">
+            <i class="fa-solid fa-rotate-left"></i> Tải lại
           </button>
-          <button class="header-action-btn primary" (click)="showSaveToast = true">
+          <button class="header-action-btn primary" (click)="saveSettings()">
             <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
           </button>
         </div>
@@ -133,6 +136,81 @@ import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout
             </div>
           </div>
 
+          <!-- Learning Settings -->
+          <div class="settings-section" *ngIf="activeTab === 'learning'">
+            <div class="section-card">
+              <div class="section-card-header">
+                <h2>Cấu hình học tập</h2>
+                <span class="section-badge blue">Học viên</span>
+              </div>
+              <div class="section-card-body">
+                <div class="form-group">
+                  <label>Thời gian cho phép trễ mặc định (Ngày)</label>
+                  <input type="number" class="form-input" [(ngModel)]="defaultGracePeriod">
+                  <span class="form-help">Số ngày được học thêm sau khi hết hạn khóa học (áp dụng toàn hệ thống)</span>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Tự động cấp chứng chỉ</label>
+                    <select class="form-input">
+                      <option selected>Khi hoàn thành 100%</option>
+                      <option>Khi hoàn thành 80% và vượt qua bài thi</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Giới hạn thiết bị đăng nhập</label>
+                    <input type="number" class="form-input" value="2">
+                    <span class="form-help">Số lượng thiết bị tối đa có thể đăng nhập cùng lúc</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-card-header">
+                <h2>Cấu hình Video & Player</h2>
+                <span class="section-badge purple">Trải nghiệm</span>
+              </div>
+              <div class="section-card-body">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Chất lượng mặc định</label>
+                    <select class="form-input">
+                      <option>Auto (Khuyên dùng)</option>
+                      <option>1080p Full HD</option>
+                      <option selected>720p HD</option>
+                      <option>480p SD</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Tốc độ phát tối đa</label>
+                    <select class="form-input">
+                      <option>1.5x</option>
+                      <option selected>2.0x</option>
+                      <option>3.0x</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-row">
+                   <div class="form-group">
+                    <label>Cho phép tua video</label>
+                    <label class="toggle-switch" style="margin-top: 8px;">
+                      <input type="checkbox" checked>
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div class="form-group">
+                    <label>Ghi nhớ vị trí phát</label>
+                    <label class="toggle-switch" style="margin-top: 8px;">
+                      <input type="checkbox" checked>
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Payment Settings -->
           <div class="settings-section" *ngIf="activeTab === 'payment'">
             <div class="section-card">
@@ -203,15 +281,54 @@ import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout
                 <span class="section-badge purple">Giao tiếp</span>
               </div>
               <div class="section-card-body">
-                <div *ngFor="let notif of emailNotifications" class="notif-item">
+                <div *ngFor="let notif of emailNotifications" class="notif-item template-item">
                   <div class="notif-info">
                     <strong>{{ notif.label }}</strong>
                     <span>{{ notif.desc }}</span>
                   </div>
-                  <label class="toggle-switch">
-                    <input type="checkbox" [checked]="notif.enabled">
-                    <span class="toggle-slider"></span>
-                  </label>
+                  <div class="notif-actions">
+                    <button class="edit-template-btn" (click)="editTemplate(notif)">
+                      <i class="fa-solid fa-pen-to-square"></i> Mẫu email
+                    </button>
+                    <label class="toggle-switch">
+                      <input type="checkbox" [(ngModel)]="notif.enabled">
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Template Editor -->
+            <div class="section-card" *ngIf="editingTemplate" style="border-top: 4px solid var(--primary); animation: slideInUp 0.3s ease;">
+              <div class="section-card-header">
+                <h2>Chỉnh sửa mẫu: {{ editingTemplate.label }}</h2>
+                <button class="close-btn" (click)="editingTemplate = null" style="background:transparent; border:none; cursor:pointer; font-size: 18px; color: var(--gray-400);">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div class="section-card-body">
+                <div class="form-group">
+                  <label>Tiêu đề Email</label>
+                  <input type="text" class="form-input" [(ngModel)]="currentTemplate.subject">
+                </div>
+                <div class="form-group">
+                  <label>Nội dung (HTML hỗ trợ)</label>
+                  <textarea class="form-input form-textarea" style="min-height: 200px;" [(ngModel)]="currentTemplate.body"></textarea>
+                </div>
+                <div class="template-placeholders">
+                  <strong>Placeholders:</strong>
+                  <div class="placeholder-chips">
+                    <span class="chip" title="Tên người nhận">{{ '{{' }}userName{{ '}}' }}</span>
+                    <span class="chip" title="Tên khóa học">{{ '{{' }}courseName{{ '}}' }}</span>
+                    <span class="chip" title="Ngày hết hạn">{{ '{{' }}deadline{{ '}}' }}</span>
+                    <span class="chip" title="Link truy cập">{{ '{{' }}link{{ '}}' }}</span>
+                  </div>
+                </div>
+                <div class="form-actions" style="margin-top: 20px; border-top: none; padding-top: 0;">
+                  <button class="header-action-btn primary" (click)="applyTemplate()">
+                    <i class="fa-solid fa-check"></i> Lưu mẫu này
+                  </button>
                 </div>
               </div>
             </div>
@@ -225,21 +342,28 @@ import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout
                 <div class="form-row">
                   <div class="form-group">
                     <label>SMTP Host</label>
-                    <input type="text" class="form-input" value="smtp.gmail.com">
+                    <input type="text" class="form-input" [(ngModel)]="smtpConfig.host">
                   </div>
                   <div class="form-group">
                     <label>Port</label>
-                    <input type="number" class="form-input" value="587">
+                    <input type="number" class="form-input" [(ngModel)]="smtpConfig.port">
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label>Tên người gửi</label>
-                    <input type="text" class="form-input" value="EduLearn">
+                    <input type="text" class="form-input" [(ngModel)]="smtpConfig.fromName">
                   </div>
                   <div class="form-group">
                     <label>Email người gửi</label>
-                    <input type="email" class="form-input" value="noreply&#64;edulearn.vn">
+                    <input type="email" class="form-input" [(ngModel)]="smtpConfig.fromEmail">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Mật khẩu ứng dụng (App Password)</label>
+                    <input type="password" class="form-input" [(ngModel)]="smtpConfig.password">
+                    <span class="form-help">Mật khẩu ứng dụng dành cho Gmail hoặc SMTP server</span>
                   </div>
                 </div>
                 <button class="test-btn">
@@ -268,7 +392,7 @@ import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout
                     <span>{{ sec.desc }}</span>
                   </div>
                   <label class="toggle-switch">
-                    <input type="checkbox" [checked]="sec.enabled">
+                    <input type="checkbox" [(ngModel)]="sec.enabled">
                     <span class="toggle-slider"></span>
                   </label>
                 </div>
@@ -362,7 +486,7 @@ import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout
       <!-- Save Toast -->
       <div class="save-toast" *ngIf="showSaveToast" (click)="showSaveToast = false">
         <i class="fa-solid fa-circle-check"></i>
-        <span>Cài đặt đã được lưu thành công!</span>
+        <span>{{ toastMessage }}</span>
       </div>
     </app-admin-layout>
   `,
@@ -552,6 +676,24 @@ import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout
     .ai-stat-value { display: block; font-size: 20px; font-weight: 800; color: var(--gray-800); }
     .ai-stat-label { font-size: 11px; color: var(--gray-400); }
 
+    /* ===== Template Editor ===== */
+    .notif-actions { display: flex; align-items: center; gap: 16px; }
+    .edit-template-btn {
+      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--primary);
+      background: transparent; color: var(--primary); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .edit-template-btn:hover { background: var(--primary); color: white; }
+    .template-placeholders { margin-top: 12px; padding: 12px; background: var(--gray-50); border-radius: 10px; }
+    .template-placeholders strong { display: block; font-size: 12px; margin-bottom: 8px; color: var(--gray-600); }
+    .placeholder-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 4px 10px; background: white; border: 1px solid var(--gray-200);
+      border-radius: 6px; font-size: 11px; font-family: monospace; color: var(--primary);
+      cursor: help;
+    }
+    @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
     .api-key-input { position: relative; }
     .api-key-input .form-input { padding-right: 44px; }
     .api-key-toggle {
@@ -576,12 +718,15 @@ import { AdminLayoutComponent } from '../../../layouts/admin-layout/admin-layout
     @keyframes toastSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   `]
 })
-export class AdminSettingsComponent {
+export class AdminSettingsComponent implements OnInit {
   activeTab = 'general';
   showSaveToast = false;
+  toastMessage = '';
+  defaultGracePeriod = 7;
 
   settingsTabs = [
     { id: 'general', label: 'Tổng quát', desc: 'Thông tin cơ bản', icon: 'fa-solid fa-sliders', theme: 'blue' },
+    { id: 'learning', label: 'Học tập', desc: 'Quy tắc & chứng chỉ', icon: 'fa-solid fa-graduation-cap', theme: 'blue' },
     { id: 'payment', label: 'Thanh toán', desc: 'Cổng & chính sách', icon: 'fa-solid fa-credit-card', theme: 'green' },
     { id: 'notification', label: 'Thông báo', desc: 'Email & push', icon: 'fa-solid fa-bell', theme: 'orange' },
     { id: 'security', label: 'Bảo mật', desc: 'Tài khoản & phiên', icon: 'fa-solid fa-shield-halved', theme: 'red' },
@@ -596,12 +741,20 @@ export class AdminSettingsComponent {
   ];
 
   emailNotifications = [
-    { label: 'Đăng ký mới', desc: 'Gửi email khi có học viên mới đăng ký tài khoản', enabled: true },
-    { label: 'Mua khóa học', desc: 'Gửi xác nhận sau khi thanh toán thành công', enabled: true },
-    { label: 'Hoàn thành khóa học', desc: 'Chúc mừng khi học viên hoàn thành khóa học', enabled: true },
-    { label: 'Khuyến mãi', desc: 'Gửi thông báo về chương trình khuyến mãi', enabled: false },
+    { label: 'Người dùng mới', desc: 'Thông báo khi có tài khoản học viên mới đăng ký', enabled: true },
     { label: 'Giảng viên mới', desc: 'Thông báo khi có giảng viên đăng ký mới chờ duyệt', enabled: true },
+    { label: 'Giao dịch mới', desc: 'Thông báo khi có giao dịch thanh toán thành công trên hệ thống', enabled: true },
+    { label: 'Báo cáo vi phạm', desc: 'Thông báo khi có khóa học hoặc bình luận bị báo cáo', enabled: true },
+    { label: 'Hệ thống', desc: 'Thông báo về tình trạng backup và cập nhật server', enabled: true },
   ];
+
+  smtpConfig = {
+    host: 'smtp.gmail.com',
+    port: 587,
+    fromName: 'EduLearn',
+    fromEmail: 'noreply@edulearn.vn',
+    password: ''
+  };
 
   securitySettings = [
     { label: 'Xác thực 2 yếu tố (2FA)', desc: 'Yêu cầu mã OTP khi đăng nhập', enabled: true, recommended: true },
@@ -610,4 +763,66 @@ export class AdminSettingsComponent {
     { label: 'Đăng nhập SSO', desc: 'Hỗ trợ đăng nhập bằng Google, Facebook', enabled: true, recommended: true },
     { label: 'Captcha đăng nhập', desc: 'Yêu cầu captcha sau 3 lần đăng nhập thất bại', enabled: true, recommended: true },
   ];
+
+  constructor(private apiService: ApiService) {}
+
+  editingTemplate: any = null;
+  currentTemplate = { subject: '', body: '' };
+  allTemplates: { [key: string]: { subject: string, body: string } } = {};
+
+  ngOnInit() {
+    this.loadSettings();
+  }
+
+  loadSettings() {
+    this.apiService.getSettings().subscribe({
+      next: (res: any) => {
+        if (res) {
+          this.defaultGracePeriod = res.defaultGracePeriod;
+          this.smtpConfig = res.smtp || this.smtpConfig;
+          this.allTemplates = res.templates || {};
+        }
+      },
+      error: (err) => console.error('Lỗi tải cài đặt:', err)
+    });
+  }
+
+  editTemplate(notif: any) {
+    this.editingTemplate = notif;
+    this.currentTemplate = { 
+      ...(this.allTemplates[notif.label] || { subject: `Thông báo: ${notif.label}`, body: '<p>Chào {{userName}},</p><p>Đây là thông báo về {{courseName}}.</p>' }) 
+    };
+  }
+
+  applyTemplate() {
+    if (this.editingTemplate) {
+      this.allTemplates[this.editingTemplate.label] = { ...this.currentTemplate };
+      this.editingTemplate = null;
+      Swal.fire({
+        toast: true, position: 'top-end', icon: 'success', title: 'Đã cập nhật mẫu tạm thời', showConfirmButton: false, timer: 1500
+      });
+    }
+  }
+
+  saveSettings() {
+    const settings = {
+      defaultGracePeriod: this.defaultGracePeriod,
+      smtp: this.smtpConfig,
+      enableExpiryNotification: true,
+      templates: this.allTemplates
+    };
+
+    this.apiService.updateSettings(settings).subscribe({
+      next: () => {
+        this.toastMessage = 'Cài đặt và các mẫu email đã được lưu thành công!';
+        this.showSaveToast = true;
+        setTimeout(() => this.showSaveToast = false, 3000);
+      },
+      error: (err) => {
+        console.error('Lỗi lưu cài đặt:', err);
+        this.toastMessage = 'Đã có lỗi xảy ra khi lưu cài đặt.';
+        this.showSaveToast = true;
+      }
+    });
+  }
 }

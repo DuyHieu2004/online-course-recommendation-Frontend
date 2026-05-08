@@ -18,9 +18,16 @@ import { ApiService } from '../../core/services/api.service';
 
     <section class="dash-hero">
       <div class="container">
-        <span class="dash-badge">🤖 AI đã cập nhật gợi ý mới cho bạn!</span>
-        <h1>Chào mừng trở lại! 👋</h1>
-        <p>Tiếp tục hành trình học tập của bạn</p>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <span class="dash-badge"><i class="fa-solid fa-robot" style="margin-right: 8px;"></i> AI đã cập nhật gợi ý mới cho bạn!</span>
+            <h1>Chào mừng trở lại! <i class="fa-solid fa-hand" style="font-size: 24px; color: #FBBF24;"></i></h1>
+            <p>Tiếp tục hành trình học tập của bạn</p>
+          </div>
+          <a routerLink="/purchase-history" class="btn btn-outline btn-sm" style="color: white; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-receipt"></i> Lịch sử mua hàng
+          </a>
+        </div>
       </div>
     </section>
 

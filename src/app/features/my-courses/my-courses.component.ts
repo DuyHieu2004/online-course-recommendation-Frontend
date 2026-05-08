@@ -75,6 +75,9 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
             <div class="ec-info">
               <h3>{{ ec.course?.title }}</h3>
               <p>{{ ec.course?.instructor }} • {{ ec.course?.modules }} chương</p>
+              <div class="date-info" *ngIf="ec.endDate">
+                 <span [class.text-danger]="isExpired(ec.endDate)">Ngày kết thúc: {{ ec.endDate | date:'dd/MM/yyyy' }}</span>
+              </div>
               <span class="progress-text">Tiến độ: {{ ec.progress }}%</span>
               <div class="progress-bar"><div class="fill" [style.width.%]="ec.progress"></div></div>
             </div>
@@ -93,15 +96,20 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
 
       <!-- Certificates -->
       <section class="section" *ngIf="dataService.certificates().length > 0">
-        <h2><i class="fa-solid fa-trophy"></i> Chứng chỉ của tôi</h2>
-        <div class="cert-grid">
+        <div class="section-header">
+          <h2><i class="fa-solid fa-trophy"></i> Chứng chỉ của tôi</h2>
+          <button class="btn btn-outline btn-sm" (click)="showAllCertificates = !showAllCertificates">
+            {{ showAllCertificates ? 'Thu gọn' : 'Xem tất cả (' + dataService.certificates().length + ')' }}
+          </button>
+        </div>
+        <div class="cert-grid" *ngIf="showAllCertificates">
           <div *ngFor="let cert of dataService.certificates()" class="cert-card card">
             <div class="cert-icon-modern"><i class="fa-solid fa-certificate"></i></div>
             <div class="cert-info">
               <strong>{{ cert.courseName }}</strong>
               <span>{{ cert.source }} • {{ cert.date }}</span>
             </div>
-            <button class="btn btn-primary btn-sm">📥 Tải về</button>
+            <button class="btn btn-primary btn-sm"><i class="fa-solid fa-download"></i> Tải về</button>
           </div>
         </div>
       </section>
@@ -170,7 +178,8 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
       margin-top: 4px;
     }
     .section { margin-bottom: 32px; }
-    .section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .section-header h2 { font-size: 18px; font-weight: 700; margin: 0; }
     .enrolled-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -192,6 +201,8 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
     .ec-info { flex: 1; }
     .ec-info h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
     .ec-info p { font-size: 12px; color: var(--gray-500); margin-bottom: 6px; }
+    .date-info { font-size: 12px; margin-bottom: 6px; }
+    .text-danger { color: #dc3545; font-weight: bold; }
     .progress-text { font-size: 12px; color: var(--gray-500); }
     .progress-bar { 
       height: 6px;
@@ -247,6 +258,8 @@ export class MyCoursesComponent implements OnInit {
   public dataService = inject(DataService);
   private authService = inject(AuthService);
 
+  showAllCertificates = false;
+
   get completedCoursesCount() {
     return this.dataService.enrolledCourses().filter(c => c.progress === 100).length;
   }
@@ -260,5 +273,10 @@ export class MyCoursesComponent implements OnInit {
 
   onPageChange(page: number) {
     this.dataService.loadMyCourses(page);
+  }
+
+  isExpired(dateString?: string): boolean {
+    if (!dateString) return false;
+    return new Date(dateString).getTime() < new Date().getTime();
   }
 }

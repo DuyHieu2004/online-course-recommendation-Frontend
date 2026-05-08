@@ -29,6 +29,35 @@ import { DataService } from '../../../core/services/data.service';
             <span class="cart-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
           </button>
 
+          <!-- Notifications Button -->
+          <div class="notification-wrapper" *ngIf="authService.isLoggedIn()" (clickOutside)="showNotifs = false">
+            <button class="icon-action-btn notif-btn" (click)="toggleNotifications()" title="Thông báo">
+              <i class="fa-regular fa-bell"></i>
+              <span class="notif-badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+            </button>
+            
+            <div class="notif-dropdown" *ngIf="showNotifs">
+              <div class="notif-header">
+                <h4>Thông báo</h4>
+                <span class="mark-read" (click)="markAllAsRead()">Đánh dấu đã đọc</span>
+              </div>
+              <div class="notif-body">
+                <div class="notif-item" *ngFor="let n of notifications" [class.unread]="!n.daDoc" (click)="readNotification(n.maThongBao)">
+                  <div class="notif-icon"><i class="fa-solid fa-bell"></i></div>
+                  <div class="notif-content">
+                    <h5>{{ n.tieuDe }}</h5>
+                    <p>{{ n.noiDung }}</p>
+                    <span class="notif-time">{{ n.ngayTao | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                </div>
+                <div class="notif-empty" *ngIf="notifications.length === 0">
+                  <i class="fa-regular fa-bell-slash"></i>
+                  <p>Không có thông báo nào</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <ng-container *ngIf="!authService.isLoggedIn()">
             <a routerLink="/login" class="btn btn-join">Tham gia ngay</a>
           </ng-container>
@@ -227,6 +256,42 @@ import { DataService } from '../../../core/services/data.service';
       box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
     }
 
+    .notification-wrapper { position: relative; }
+    .notif-badge {
+      position: absolute; top: -4px; right: -4px; background: #FF9800; color: white;
+      font-size: 10px; font-weight: 700; height: 18px; min-width: 18px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; padding: 0 4px;
+      border: 2px solid var(--primary);
+    }
+    .notif-dropdown {
+      position: absolute; top: 50px; right: 0; width: 320px; background: white;
+      border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 1000;
+      border: 1px solid var(--gray-200); overflow: hidden;
+    }
+    .notif-header {
+      display: flex; justify-content: space-between; align-items: center; padding: 16px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .notif-header h4 { font-size: 16px; margin: 0; color: var(--gray-800); }
+    .mark-read { font-size: 12px; color: var(--primary); cursor: pointer; font-weight: 500; }
+    .notif-body { max-height: 350px; overflow-y: auto; }
+    .notif-item {
+      display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--gray-100);
+      cursor: pointer; transition: background 0.2s;
+    }
+    .notif-item:hover { background: var(--gray-50); }
+    .notif-item.unread { background: #f0f7ff; }
+    .notif-item.unread:hover { background: #e5f0fa; }
+    .notif-icon {
+      width: 36px; height: 36px; background: var(--primary-bg); color: var(--primary);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .notif-content h5 { font-size: 13px; margin: 0 0 4px; color: var(--gray-800); }
+    .notif-content p { font-size: 12px; margin: 0 0 6px; color: var(--gray-600); line-height: 1.4; }
+    .notif-time { font-size: 11px; color: var(--gray-400); }
+    .notif-empty { text-align: center; padding: 30px 20px; color: var(--gray-400); }
+    .notif-empty i { font-size: 30px; margin-bottom: 10px; }
+
     /* ===== User Profile Pill ===== */
     .user-menu-pill {
       display: flex;
@@ -313,6 +378,35 @@ import { DataService } from '../../../core/services/data.service';
 export class HeaderComponent {
   authService = inject(AuthService);
   dataService = inject(DataService);
+
+  showNotifs = false;
+
+  constructor() {
+    if (this.authService.isLoggedIn()) {
+      this.dataService.loadNotifications();
+    }
+  }
+
+  get notifications() {
+    return this.dataService.notifications();
+  }
+
+  get unreadCount() {
+    return this.dataService.unreadNotifications();
+  }
+
+  toggleNotifications() {
+    this.showNotifs = !this.showNotifs;
+  }
+
+  readNotification(id: number) {
+    this.dataService.markNotificationRead(id);
+  }
+
+  markAllAsRead() {
+    const unread = this.notifications.filter(n => !n.daDoc);
+    unread.forEach(n => this.readNotification(n.maThongBao));
+  }
 
   get cartCount() {
     return this.dataService.cartItems().length;

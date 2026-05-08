@@ -60,6 +60,12 @@ import Swal from 'sweetalert2';
                 </select>
               </div>
             </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Thời hạn khóa học (Tháng) *</label>
+                <input type="number" class="form-control" [(ngModel)]="thoiGianHocDuKien" placeholder="Ví dụ: 6">
+              </div>
+            </div>
             <div class="form-group">
               <label>Mô tả</label>
               <textarea class="form-control" rows="4" [(ngModel)]="description" placeholder="Mô tả những gì học viên sẽ học được..."></textarea>
@@ -269,6 +275,8 @@ export class CreateCourseComponent implements OnInit {
   selectedLang = 'Tiếng Việt';
   selectedLevel = 'Tất cả cấp độ';
   status = 'Draft';
+  thoiGianHocDuKien: number | null = null;
+  thoiGianChoPhepTre: number | null = null;
 
   // Static options
   languages = ['Tiếng Việt', 'Tiếng Anh', 'Tiếng Nhật', 'Tiếng Hàn', 'Song ngữ (Việt - Anh)'];
@@ -306,6 +314,8 @@ export class CreateCourseComponent implements OnInit {
           this.price = course.giaGoc || course.GiaGoc || 0;
           this.selectedCategory = course.maTheLoai || course.MaTheLoai || course.theLoai?.maTheLoai || course.TheLoai?.MaTheLoai || '';
           this.status = course.tinhTrang || course.TinhTrang || 'Draft';
+          this.thoiGianHocDuKien = course.thoiGianHocDuKien || course.ThoiGianHocDuKien || null;
+          this.thoiGianChoPhepTre = course.thoiGianChoPhepTre || course.ThoiGianChoPhepTre || null;
         }
 
         // Tải danh sách chương
@@ -508,7 +518,8 @@ export class CreateCourseComponent implements OnInit {
       giaGoc: this.price,
       maTheLoai: Number(this.selectedCategory),
       ngonNgu: this.selectedLang,
-      capDo: this.selectedLevel
+      capDo: this.selectedLevel,
+      thoiGianHocDuKien: this.thoiGianHocDuKien
     };
 
     const request = this.editId
