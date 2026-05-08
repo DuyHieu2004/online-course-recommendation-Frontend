@@ -602,8 +602,8 @@ export class CourseListComponent implements OnInit {
     // If category changed, re-fetch from API
     if (this.selectedCategory !== 'Tất cả') {
       const rawCat = this.dataService.categoriesRaw().find(c => {
-         const catName = c.ten || (c as any).Ten || (c as any).name || (c as any).TenTheLoai;
-         return catName === this.selectedCategory;
+        const catName = c.ten || (c as any).Ten || (c as any).name || (c as any).TenTheLoai;
+        return catName === this.selectedCategory;
       });
       if (rawCat) {
         this.router.navigate([], {
@@ -701,8 +701,8 @@ export class CourseListComponent implements OnInit {
     let categoryId: number | undefined = undefined;
     if (this.selectedCategory !== 'Tất cả') {
       const rawCat = this.dataService.categoriesRaw().find(c => {
-         const catName = c.ten || (c as any).Ten || (c as any).name || (c as any).TenTheLoai;
-         return catName === this.selectedCategory;
+        const catName = c.ten || (c as any).Ten || (c as any).name || (c as any).TenTheLoai;
+        return catName === this.selectedCategory;
       });
       categoryId = rawCat?.maTheLoai || (rawCat as any)?.MaTheLoai;
     }
@@ -724,10 +724,10 @@ export class CourseListComponent implements OnInit {
 
   hasActiveFilters(): boolean {
     return this.selectedCategory !== 'Tất cả' ||
-           this.selectedLevel !== 'Tất cả' ||
-           this.selectedRating > 0 ||
-           this.selectedPrice !== 'all' ||
-           this.searchQuery.length > 0;
+      this.selectedLevel !== 'Tất cả' ||
+      this.selectedRating > 0 ||
+      this.selectedPrice !== 'all' ||
+      this.searchQuery.length > 0;
   }
 
   resetFilters() {
@@ -811,7 +811,7 @@ export class CourseListComponent implements OnInit {
     const total = this.totalPages;
     const current = this.dataService.currentCoursePage();
     const result = [];
-    
+
     let start = Math.max(1, current - 2);
     let end = Math.min(total, current + 2);
 
@@ -826,15 +826,15 @@ export class CourseListComponent implements OnInit {
 
   goToPage(page: number) {
     if (page < 1 || page > this.totalPages || page === this.dataService.currentCoursePage()) return;
-    
+
     // Scroll smoothly to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     let categoryId: number | undefined = undefined;
     if (this.selectedCategory !== 'Tất cả') {
       const rawCat = this.dataService.categoriesRaw().find(c => {
-         const catName = c.ten || (c as any).Ten || (c as any).name || (c as any).TenTheLoai;
-         return catName === this.selectedCategory;
+        const catName = c.ten || (c as any).Ten || (c as any).name || (c as any).TenTheLoai;
+        return catName === this.selectedCategory;
       });
       categoryId = rawCat?.maTheLoai || (rawCat as any)?.MaTheLoai;
     }
