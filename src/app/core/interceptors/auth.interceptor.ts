@@ -2,8 +2,9 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  // Chỉ gắn token cho request tới API backend
-  if (req.url.startsWith(environment.apiUrl)) {
+  // Gắn token cho tất cả các request tới backend API
+  const isApiUrl = req.url.includes('/api/');
+  if (isApiUrl) {
     const token = localStorage.getItem('auth_token');
     if (token) {
       req = req.clone({
