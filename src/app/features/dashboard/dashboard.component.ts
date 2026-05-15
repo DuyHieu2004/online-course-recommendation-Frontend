@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { CourseCardComponent } from '../../shared/components/course-card/course-card.component';
 import { DataService } from '../../core/services/data.service';
@@ -92,23 +92,38 @@ import { AuthService } from '../../core/services/auth.service';
       <section class="section" *ngIf="ongoingCourses.length > 0">
         <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
           <h2><i class="fa-solid fa-play-circle"></i> Tiếp tục học tập</h2>
-          <button *ngIf="ongoingCourses.length > 2" class="btn btn-outline btn-sm" style="border:none; color: var(--primary); font-weight: 600;" (click)="showAllOngoing = !showAllOngoing">
+          <button *ngIf="ongoingCourses.length > 2" class="btn-link-sm" (click)="showAllOngoing = !showAllOngoing">
             {{ showAllOngoing ? 'Ẩn bớt ▴' : 'Xem tất cả (' + ongoingCourses.length + ') ▾' }}
           </button>
         </div>
         <div class="enrolled-grid">
-          <div *ngFor="let ec of (showAllOngoing ? ongoingCourses : ongoingCourses.slice(0, 2))" class="enrolled-card card">
-            <div class="ec-icon">
+          <div *ngFor="let ec of (showAllOngoing ? ongoingCourses : ongoingCourses.slice(0, 2))" 
+               class="enrolled-card card" 
+               (click)="!isExpired(ec) ? goToLearn(ec.course?.id, $event) : null"
+               style="cursor: pointer; position: relative;">
+            <div class="ec-icon" [class.expired-overlay]="isExpired(ec)">
               <img *ngIf="ec.course?.image && ec.course!.image!.length > 5" [src]="ec.course?.image" (error)="ec.course!.image = ''" alt="course" style="width: 100%; height: 100%; object-fit: cover;">
               <div *ngIf="!ec.course?.image || ec.course!.image!.length <= 5" style="font-size: 32px; display:flex; justify-content:center; align-items:center; width:100%; height:100%"><i class="fa-solid fa-box"></i></div>
+              <div *ngIf="isExpired(ec)" class="expired-tag">HẾT HẠN</div>
             </div>
             <div class="ec-info">
-              <h3>{{ ec.course?.title }}</h3>
+              <h3 [class.muted]="isExpired(ec)">{{ ec.course?.title }}</h3>
               <p>{{ ec.course?.instructor }} • {{ ec.course?.modules }} chương</p>
+              
+              <div class="expiry-info" *ngIf="ec.endDate" [style.color]="isExpired(ec) ? '#ef4444' : '#f59e0b'" style="font-size: 11px; margin-bottom: 4px; font-weight: 600;">
+                <i class="fa-solid fa-clock"></i> {{ isExpired(ec) ? 'Đã hết hạn: ' : 'Hết hạn: ' }}{{ ec.endDate | date:'dd/MM/yyyy' }}
+              </div>
+              
               <span class="progress-text">Tiến độ: {{ ec.progress }}%</span>
-              <div class="progress-bar"><div class="fill" [style.width.%]="ec.progress"></div></div>
+              <div class="progress-bar"><div class="fill" [style.width.%]="ec.progress" [style.background]="isExpired(ec) ? '#94a3b8' : ''"></div></div>
             </div>
-            <a [routerLink]="['/learn', ec.course?.id || 'course', 'lesson', 1]" class="btn btn-primary btn-sm">► Tiếp tục</a>
+            
+            <button *ngIf="!isExpired(ec)" (click)="goToLearn(ec.course?.id, $event)" 
+                    class="btn btn-primary btn-sm"
+                    style="white-space: nowrap; z-index: 2;">► Tiếp tục</button>
+            <button *ngIf="isExpired(ec)" (click)="goToCourseDetail(ec.course?.id, $event)" 
+                    class="btn btn-danger btn-sm"
+                    style="white-space: nowrap; z-index: 2; background: #ef4444; border-color: #ef4444;">Mua lại</button>
           </div>
         </div>
       </section>
@@ -117,32 +132,52 @@ import { AuthService } from '../../core/services/auth.service';
       <section class="section" *ngIf="completedCourses.length > 0">
         <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
           <h2><i class="fa-solid fa-circle-check" style="color: #10B981;"></i> Đã hoàn thành</h2>
-          <button *ngIf="completedCourses.length > 2" class="btn btn-outline btn-sm" style="border:none; color: #10B981; font-weight: 600;" (click)="showAllCompleted = !showAllCompleted">
+          <button *ngIf="completedCourses.length > 2" class="btn-link-sm" style="color: #10B981;" (click)="showAllCompleted = !showAllCompleted">
             {{ showAllCompleted ? 'Ẩn bớt ▴' : 'Xem tất cả (' + completedCourses.length + ') ▾' }}
           </button>
         </div>
         <div class="enrolled-grid">
-          <div *ngFor="let ec of (showAllCompleted ? completedCourses : completedCourses.slice(0, 2))" class="enrolled-card card">
-            <div class="ec-icon">
+          <div *ngFor="let ec of (showAllCompleted ? completedCourses : completedCourses.slice(0, 2))" 
+               class="enrolled-card card" 
+               (click)="!isExpired(ec) ? goToLearn(ec.course?.id, $event) : null"
+               style="cursor: pointer; position: relative;">
+            <div class="ec-icon" [class.expired-overlay]="isExpired(ec)">
               <img *ngIf="ec.course?.image && ec.course!.image!.length > 5" [src]="ec.course?.image" (error)="ec.course!.image = ''" alt="course" style="width: 100%; height: 100%; object-fit: cover;">
               <div *ngIf="!ec.course?.image || ec.course!.image!.length <= 5" style="font-size: 32px; display:flex; justify-content:center; align-items:center; width:100%; height:100%"><i class="fa-solid fa-box"></i></div>
+              <div *ngIf="isExpired(ec)" class="expired-tag">HẾT HẠN</div>
             </div>
             <div class="ec-info">
-              <h3>{{ ec.course?.title }}</h3>
+              <h3 [class.muted]="isExpired(ec)">{{ ec.course?.title }}</h3>
               <p>{{ ec.course?.instructor }} • {{ ec.course?.modules }} chương</p>
+              
+              <div class="expiry-info" *ngIf="ec.endDate" [style.color]="isExpired(ec) ? '#ef4444' : '#f59e0b'" style="font-size: 11px; margin-bottom: 4px; font-weight: 600;">
+                <i class="fa-solid fa-clock"></i> {{ isExpired(ec) ? 'Đã hết hạn: ' : 'Hết hạn: ' }}{{ ec.endDate | date:'dd/MM/yyyy' }}
+              </div>
+              
               <span class="progress-text" style="color: #10B981; font-weight: 600;"><i class="fa-solid fa-check"></i> Hoàn thành 100%</span>
               <div class="progress-bar"><div class="fill" style="width: 100%; background: linear-gradient(90deg, #10B981, #059669);"></div></div>
             </div>
-            <a [routerLink]="['/course', ec.course?.id]" class="btn btn-outline btn-sm">Xem lại</a>
+            
+            <button *ngIf="!isExpired(ec)" (click)="goToLearn(ec.course?.id, $event)" 
+                    class="btn btn-outline btn-sm"
+                    style="white-space: nowrap; z-index: 2;">Xem lại</button>
+            <button *ngIf="isExpired(ec)" (click)="goToCourseDetail(ec.course?.id, $event)" 
+                    class="btn btn-danger btn-sm"
+                    style="white-space: nowrap; z-index: 2; background: #ef4444; border-color: #ef4444;">Mua lại</button>
           </div>
         </div>
       </section>
 
       <!-- Certificates -->
       <section class="section" *ngIf="dataService.certificates().length > 0">
-        <h2><i class="fa-solid fa-trophy"></i> Chứng chỉ của tôi</h2>
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2><i class="fa-solid fa-trophy"></i> Chứng chỉ của tôi</h2>
+          <button *ngIf="dataService.certificates().length > 4" class="btn-link-sm" style="color: #f59e0b;" (click)="showAllCertificates = !showAllCertificates">
+            {{ showAllCertificates ? 'Ẩn bớt ▴' : 'Xem tất cả (' + dataService.certificates().length + ') ▾' }}
+          </button>
+        </div>
         <div class="cert-grid">
-          <div *ngFor="let cert of dataService.certificates()" class="cert-card card">
+          <div *ngFor="let cert of (showAllCertificates ? dataService.certificates() : dataService.certificates().slice(0, 4))" class="cert-card card">
             <div class="cert-icon-modern"><i class="fa-solid fa-certificate"></i></div>
             <div class="cert-info">
               <strong>{{ cert.courseName }}</strong>
@@ -294,11 +329,32 @@ import { AuthService } from '../../core/services/auth.service';
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
+    .btn-link-sm {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    .btn-link-sm:hover {
+      background: rgba(0,0,0,0.05);
+      text-decoration: underline;
+    }
     .enrolled-card {
       display: flex;
       align-items: center;
       gap: 16px;
       padding: 16px;
+      transition: all 0.2s ease;
+    }
+    .enrolled-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      border-color: var(--primary-light);
     }
     .ec-icon {
       width: 60px; height: 60px;
@@ -362,14 +418,62 @@ import { AuthService } from '../../core/services/auth.service';
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
     }
+
+    .expired-overlay {
+      position: relative;
+    }
+    .expired-overlay::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.4);
+      z-index: 1;
+    }
+    .expired-tag {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 4px;
+      z-index: 2;
+    }
+    .muted {
+      color: var(--gray-400) !important;
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
   public dataService = inject(DataService);
   private authService = inject(AuthService);
+  private router = inject(Router);
 
   showAllOngoing = false;
   showAllCompleted = false;
+  showAllCertificates = false;
+
+  goToCourseDetail(courseId: any, event?: Event) {
+    if (event) event.stopPropagation();
+    if (courseId) {
+      this.router.navigate(['/course', courseId]);
+    }
+  }
+
+  isExpired(ec: any): boolean {
+    if (!ec.endDate) return false;
+    return new Date(ec.endDate) < new Date();
+  }
+
+  goToLearn(courseId: any, event: Event) {
+    event.stopPropagation();
+    if (courseId) {
+      this.router.navigate(['/learn', courseId, 'lesson', 1]);
+    }
+  }
 
   get completedCourses() {
     return this.dataService.enrolledCourses().filter(c => c.progress === 100);
@@ -392,7 +496,7 @@ export class DashboardComponent implements OnInit {
 
   downloadCert(cert: any) {
     const studentName = this.authService.currentUser()?.userName || 'Học viên';
-    
+
     // Tạo giao diện chứng chỉ
     const certHtml = `
       <div id="print-cert" style="
