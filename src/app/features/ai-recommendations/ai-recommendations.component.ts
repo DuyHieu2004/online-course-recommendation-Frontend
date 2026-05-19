@@ -14,8 +14,9 @@ import { ApiService } from '../../core/services/api.service';
   standalone: true,
   imports: [CommonModule, HeaderComponent, CourseCardComponent, RouterLink],
   template: `
-    <app-header />
+    <app-header></app-header>
     <div class="ai-page">
+      <!-- Glow background effects -->
       <div class="bg-glow glow-1"></div>
       <div class="bg-glow glow-2"></div>
 
@@ -107,7 +108,8 @@ import { ApiService } from '../../core/services/api.service';
       </div>
     </div>
   `,
-  styles: [`
+  styles: [
+    `
     :host {
       --clr-brand: #ea580c;
       --clr-brand-light: #fff7ed;
@@ -123,33 +125,30 @@ import { ApiService } from '../../core/services/api.service';
     .ai-page {
       background-color: var(--clr-bg-main);
       min-height: 100vh;
-      color: var(--clr-text-main);
       padding-bottom: 80px;
       position: relative;
       overflow: hidden;
-      font-family: 'Inter', sans-serif;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1300px;
       margin: 0 auto;
       padding: 0 24px;
       position: relative;
       z-index: 10;
     }
 
-    /* Hiệu ứng đốm sáng mờ ảo ở background */
     .bg-glow {
       position: absolute;
       width: 600px;
       height: 600px;
-      background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
       border-radius: 50%;
       z-index: 0;
       pointer-events: none;
+      filter: blur(80px);
     }
-    .glow-1 { top: -200px; left: -100px; }
-    .glow-2 { top: 20%; right: -200px; background: radial-gradient(circle, rgba(234, 88, 12, 0.1) 0%, rgba(255, 255, 255, 0) 70%); }
+    .glow-1 { top: -200px; left: -100px; background: rgba(139, 92, 246, 0.1); }
+    .glow-2 { top: 40%; right: -200px; background: rgba(234, 88, 12, 0.08); }
 
     /* ===== Section Headers ===== */
     .section-header {
@@ -202,6 +201,7 @@ import { ApiService } from '../../core/services/api.service';
       background: rgba(255, 255, 255, 0.6);
       font-size: 15px;
     }
+    .ai-price { font-size: 24px; font-weight: 900; color: var(--clr-text-main); }
 
     .btn-join {
       background: var(--clr-brand-light);

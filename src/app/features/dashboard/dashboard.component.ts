@@ -95,18 +95,33 @@ import { ApiService } from '../../core/services/api.service';
           </button>
         </div>
         <div class="enrolled-grid">
-          <div *ngFor="let ec of (showAllOngoing ? ongoingCourses : ongoingCourses.slice(0, 2))" class="enrolled-card card">
-            <div class="ec-icon">
+          <div *ngFor="let ec of (showAllOngoing ? ongoingCourses : ongoingCourses.slice(0, 2))" 
+               class="enrolled-card card" 
+               (click)="!isExpired(ec) ? goToLearn(ec.course?.id, $event) : null"
+               style="cursor: pointer; position: relative;">
+            <div class="ec-icon" [class.expired-overlay]="isExpired(ec)">
               <img *ngIf="ec.course?.image && ec.course!.image!.length > 5" [src]="ec.course?.image" (error)="ec.course!.image = ''" alt="course" style="width: 100%; height: 100%; object-fit: cover;">
               <div *ngIf="!ec.course?.image || ec.course!.image!.length <= 5" style="font-size: 32px; display:flex; justify-content:center; align-items:center; width:100%; height:100%"><i class="fa-solid fa-box"></i></div>
+              <div *ngIf="isExpired(ec)" class="expired-tag">HẾT HẠN</div>
             </div>
             <div class="ec-info">
-              <h3>{{ ec.course?.title }}</h3>
+              <h3 [class.muted]="isExpired(ec)">{{ ec.course?.title }}</h3>
               <p>{{ ec.course?.instructor }} • {{ ec.course?.modules }} chương</p>
+              
+              <div class="expiry-info" *ngIf="ec.endDate" [style.color]="isExpired(ec) ? '#ef4444' : '#f59e0b'" style="font-size: 11px; margin-bottom: 4px; font-weight: 600;">
+                <i class="fa-solid fa-clock"></i> {{ isExpired(ec) ? 'Đã hết hạn: ' : 'Hết hạn: ' }}{{ ec.endDate | date:'dd/MM/yyyy' }}
+              </div>
+              
               <span class="progress-text">Tiến độ: {{ ec.progress }}%</span>
-              <div class="progress-bar"><div class="fill" [style.width.%]="ec.progress"></div></div>
+              <div class="progress-bar"><div class="fill" [style.width.%]="ec.progress" [style.background]="isExpired(ec) ? '#94a3b8' : ''"></div></div>
             </div>
-            <a [routerLink]="['/learn', ec.course?.id || 'course', 'lesson', 1]" class="btn btn-primary btn-sm">► Tiếp tục</a>
+            
+            <button *ngIf="!isExpired(ec)" (click)="goToLearn(ec.course?.id, $event)" 
+                    class="btn btn-primary btn-sm"
+                    style="white-space: nowrap; z-index: 2;">► Tiếp tục</button>
+            <button *ngIf="isExpired(ec)" (click)="goToCourseDetail(ec.course?.id, $event)" 
+                    class="btn btn-danger btn-sm"
+                    style="white-space: nowrap; z-index: 2; background: #ef4444; border-color: #ef4444;">Mua lại</button>
           </div>
         </div>
       </section>
@@ -119,18 +134,28 @@ import { ApiService } from '../../core/services/api.service';
           </button>
         </div>
         <div class="enrolled-grid">
-          <div *ngFor="let ec of (showAllCompleted ? completedCourses : completedCourses.slice(0, 2))" class="enrolled-card card">
-            <div class="ec-icon">
+          <div *ngFor="let ec of (showAllCompleted ? completedCourses : completedCourses.slice(0, 2))" 
+               class="enrolled-card card" 
+               (click)="!isExpired(ec) ? goToLearn(ec.course?.id, $event) : null"
+               style="cursor: pointer; position: relative;">
+            <div class="ec-icon" [class.expired-overlay]="isExpired(ec)">
               <img *ngIf="ec.course?.image && ec.course!.image!.length > 5" [src]="ec.course?.image" (error)="ec.course!.image = ''" alt="course" style="width: 100%; height: 100%; object-fit: cover;">
               <div *ngIf="!ec.course?.image || ec.course!.image!.length <= 5" style="font-size: 32px; display:flex; justify-content:center; align-items:center; width:100%; height:100%"><i class="fa-solid fa-box"></i></div>
+              <div *ngIf="isExpired(ec)" class="expired-tag">HẾT HẠN</div>
             </div>
             <div class="ec-info">
-              <h3>{{ ec.course?.title }}</h3>
+              <h3 [class.muted]="isExpired(ec)">{{ ec.course?.title }}</h3>
               <p>{{ ec.course?.instructor }} • {{ ec.course?.modules }} chương</p>
               <span class="progress-text completed-text"><i class="fa-solid fa-check"></i> Hoàn thành 100%</span>
               <div class="progress-bar"><div class="fill completed-fill"></div></div>
             </div>
-            <a [routerLink]="['/course', ec.course?.id]" class="btn btn-outline btn-sm">Xem lại</a>
+            
+            <button *ngIf="!isExpired(ec)" (click)="goToLearn(ec.course?.id, $event)" 
+                    class="btn btn-outline btn-sm"
+                    style="white-space: nowrap; z-index: 2;">Xem lại</button>
+            <button *ngIf="isExpired(ec)" (click)="goToCourseDetail(ec.course?.id, $event)" 
+                    class="btn btn-danger btn-sm"
+                    style="white-space: nowrap; z-index: 2; background: #ef4444; border-color: #ef4444;">Mua lại</button>
           </div>
         </div>
       </section>
@@ -354,11 +379,32 @@ import { ApiService } from '../../core/services/api.service';
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
+    .btn-link-sm {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    .btn-link-sm:hover {
+      background: rgba(0,0,0,0.05);
+      text-decoration: underline;
+    }
     .enrolled-card {
       display: flex;
       align-items: center;
       gap: 16px;
       padding: 16px;
+      transition: all 0.2s ease;
+    }
+    .enrolled-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      border-color: var(--primary-light);
     }
     .ec-icon {
       width: 60px;

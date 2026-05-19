@@ -109,7 +109,18 @@ import Swal from 'sweetalert2';
               </div>
 
               <!-- Form đánh giá: chỉ hiện khi đã mua và chưa đánh giá -->
-              <div class="add-review card" *ngIf="isLoggedIn && isEnrolled && !hasReviewed">
+              <div class="add-review card" *ngIf="isLoggedIn && isEnrolled && !hasReviewed" [class.locked]="!isCompleted && enrollmentProgress < 100">
+                <div class="lock-overlay" *ngIf="!isCompleted && enrollmentProgress < 100">
+                  <div class="lock-box">
+                    <i class="fa-solid fa-lock"></i>
+                    <p>Bạn cần hoàn thành 100% khóa học để thực hiện đánh giá.</p>
+                    <div class="progress-mini">
+                      <div class="fill" [style.width.%]="enrollmentProgress"></div>
+                    </div>
+                    <span>Tiến độ hiện tại: {{ enrollmentProgress | number:'1.0-0' }}%</span>
+                  </div>
+                </div>
+
                 <h4><i class="fa-solid fa-pen-to-square"></i> Viết đánh giá của bạn</h4>
                 <div class="star-picker">
                   <label>Điểm đánh giá (Chọn từ 1-5 sao)</label>
@@ -128,7 +139,7 @@ import Swal from 'sweetalert2';
                   <textarea [(ngModel)]="reviewText" rows="3" class="form-control" [placeholder]="'Cảm nghĩ của bạn về khóa học này...'"></textarea>
                 </div>
                 <div style="margin-top: 15px;">
-                  <button class="btn btn-primary" (click)="submitReview()" [disabled]="reviewSubmitting" style="padding: 10px 25px; font-weight: bold;">
+                  <button class="btn btn-primary" (click)="submitReview()" [disabled]="reviewSubmitting || (!isCompleted && enrollmentProgress < 100)" style="padding: 10px 25px; font-weight: bold;">
                     {{ reviewSubmitting ? 'ĐANG GỬI...' : 'GỬI ĐÁNH GIÁ' }}
                   </button>
                 </div>
@@ -141,7 +152,10 @@ import Swal from 'sweetalert2';
 
               <!-- Chưa mua -->
               <div *ngIf="isLoggedIn && !isEnrolled" class="need-purchase">
-                <i class="fa-solid fa-lock"></i> Bạn cần mua khóa học này trước khi có thể đánh giá.
+                <div class="purchase-msg">
+                   <i class="fa-solid fa-cart-arrow-down"></i>
+                   <span>Mua khóa học này để có thể đánh giá nội dung.</span>
+                </div>
               </div>
 
               <!-- Chưa đăng nhập -->
@@ -154,13 +168,16 @@ import Swal from 'sweetalert2';
                 <i class="fa-solid fa-message" style="font-size: 24px; color: var(--gray-400); margin-bottom: 8px"></i>
                 <p>Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
               </div>
-              <div class="review-card card" *ngFor="let review of reviews">
+              <div class="review-card card" *ngFor="let review of reviews; let i = index" [class.my-review]="i === 0 && hasReviewed && review.nguoiDanhGia?.maNguoiDung === authService.currentUser()?.userId">
                 <div class="review-header">
                   <div class="avatar" [style.background]="getAvatarColor(review.nguoiDanhGia?.ten)">
                     {{ getInitials(review.nguoiDanhGia?.ten) }}
                   </div>
                   <div class="review-meta">
-                    <strong>{{ review.nguoiDanhGia?.ten || 'Học viên ẩn danh' }}</strong>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                       <strong>{{ review.nguoiDanhGia?.ten || 'Học viên ẩn danh' }}</strong>
+                       <span class="badge badge-success" *ngIf="i === 0 && hasReviewed && review.nguoiDanhGia?.maNguoiDung === authService.currentUser()?.userId" style="font-size: 10px;">Đánh giá của tôi</span>
+                    </div>
                     <div class="review-stars">
                       <i *ngFor="let s of [1,2,3,4,5]" class="fa-solid fa-star" [style.color]="s <= (review.rating || 0) ? '#fccc29' : '#e5e7eb'" style="font-size: 12px"></i>
                       <span class="review-date">{{ review.ngayDanhGia | date:'dd/MM/yyyy' }}</span>
@@ -214,6 +231,9 @@ import Swal from 'sweetalert2';
                 <span class="price-original" *ngIf="course.khuyenMai">{{ course.giaGoc | number }}đ</span>
 
                 <ng-container *ngIf="isEnrolled">
+                  <div class="completed-badge" *ngIf="isCompleted" style="text-align: center; padding: 12px; margin-bottom: 12px; background: rgba(34, 197, 94, 0.1); color: var(--success); border-radius: 8px; font-weight: 700; border: 1px solid rgba(34, 197, 94, 0.2);">
+                    <i class="fa-solid fa-trophy" style="margin-right: 8px;"></i> Đã hoàn thành 100%
+                  </div>
                   <a [routerLink]="['/learn', courseId, 'lesson', 1]" class="btn btn-success btn-lg" style="width:100%; text-align:center; text-decoration:none;">
                     <i class="fa-solid fa-play"></i> Vào học ngay
                   </a>
@@ -221,6 +241,7 @@ import Swal from 'sweetalert2';
                     <i class="fa-solid fa-circle-check"></i> Bạn đã sở hữu khóa học này
                   </div>
                 </ng-container>
+
                 <ng-container *ngIf="!isEnrolled">
                   <button class="btn btn-primary btn-lg" style="width:100%" (click)="addToCart()" [disabled]="cartLoading">
                     <ng-container *ngIf="!cartLoading">
@@ -471,7 +492,39 @@ import Swal from 'sweetalert2';
       margin-bottom: 20px;
       background: var(--gray-50);
       border: 1px dashed var(--gray-300);
+      position: relative;
     }
+    .add-review.locked {
+      filter: grayscale(1);
+      pointer-events: none;
+    }
+    .lock-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255,255,255,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      pointer-events: all;
+      border-radius: var(--radius-md);
+    }
+    .lock-box {
+      background: white;
+      padding: 20px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+      max-width: 300px;
+    }
+    .lock-box i { font-size: 32px; color: var(--gray-400); margin-bottom: 12px; }
+    .lock-box p { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 12px; }
+    .lock-box span { font-size: 12px; color: var(--gray-500); }
+    .progress-mini {
+      height: 6px; background: var(--gray-200); border-radius: 3px; margin-bottom: 6px; overflow: hidden;
+    }
+    .progress-mini .fill { height: 100%; background: var(--primary); }
+
     .add-review h4 { margin: 0 0 16px; font-size: 15px; }
     .add-review h4 i { margin-right: 6px; color: var(--primary); }
     .star-picker { margin-bottom: 16px; }
@@ -487,19 +540,30 @@ import Swal from 'sweetalert2';
       border-radius: var(--radius-sm); font-size: 14px; resize: vertical;
     }
     .review-input textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(91,99,211,0.1); }
+    
+    .review-card.my-review {
+      border: 2px solid rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.02);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+    }
+
     .already-reviewed, .need-purchase, .need-login, .no-reviews {
-      padding: 16px 20px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      margin-bottom: 20px;
+      padding: 24px 20px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      margin-bottom: 24px;
       text-align: center;
     }
-    .already-reviewed { background: rgba(16,185,129,0.1); color: #059669; }
-    .already-reviewed i { margin-right: 4px; }
-    .need-completion { background: rgba(59,130,246,0.1); color: #3182ce; padding: 16px 20px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 20px; text-align: center; }
-    .need-completion i { margin-right: 4px; }
-    .need-purchase { background: rgba(245,158,11,0.1); color: #D97706; }
-    .need-purchase i { margin-right: 4px; }
+    .already-reviewed { background: rgba(16,185,129,0.1); color: #059669; font-weight: 600; }
+    .already-reviewed i { margin-right: 8px; font-size: 18px; }
+    
+    .need-purchase { 
+      background: var(--gray-100); 
+      border: 1px solid var(--gray-200);
+      color: var(--gray-600); 
+    }
+    .purchase-msg { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .purchase-msg i { font-size: 24px; color: var(--primary); }
     .need-login { background: rgba(91,99,211,0.08); color: var(--primary); }
     .need-login i { margin-right: 4px; }
     .need-login a { color: var(--primary); font-weight: 700; text-decoration: underline; }
@@ -674,7 +738,7 @@ export class CourseDetailComponent implements OnInit {
   private router = inject(Router);
   private apiService = inject(ApiService);
   private dataService = inject(DataService);
-  private authService = inject(AuthService);
+  public authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
 
   courseId!: number;
@@ -690,7 +754,9 @@ export class CourseDetailComponent implements OnInit {
   isEnrolled = false;
   isExpired = false;
   enrollmentProgress = 0;
+  isCompleted = false;
   hasReviewed = false;
+  myReview: Review | null = null;
   starsArr = [1, 2, 3, 4, 5];
   reviewSubmitting = false;
   reviewText = '';
@@ -739,6 +805,10 @@ export class CourseDetailComponent implements OnInit {
         console.log('[CourseDetail] API response received:', data);
         this.course = data.course as CourseDetail;
         this.loading = false;
+        // Nếu đã học rồi thì lấy lại tiến độ chính xác
+        if (this.isEnrolled) {
+          this.checkEnrolledStatus();
+        }
         this.cdr.detectChanges();
         console.log('[CourseDetail] course set, loading =', this.loading);
       },
@@ -754,9 +824,24 @@ export class CourseDetailComponent implements OnInit {
   loadReviews() {
     this.apiService.getCourseReviews(this.courseId).subscribe({
       next: (res: any) => {
-        // API returns { totalCount, page, pageSize, data: [...] }
-        this.reviews = res?.data || res || [];
-        this.checkIfUserReviewed();
+        let allReviews = res?.data || res || [];
+
+        if (this.authService.isLoggedIn()) {
+          const currentUserId = this.authService.currentUser()?.userId;
+          // Tìm đánh giá của tôi
+          const myReviewIdx = allReviews.findIndex((r: any) => r.nguoiDanhGia?.maNguoiDung === currentUserId);
+
+          if (myReviewIdx !== -1) {
+            const myReview = allReviews.splice(myReviewIdx, 1)[0];
+            this.reviews = [myReview, ...allReviews];
+            this.hasReviewed = true;
+          } else {
+            this.reviews = allReviews;
+            this.hasReviewed = false;
+          }
+        } else {
+          this.reviews = allReviews;
+        }
         this.cdr.detectChanges();
       },
       error: () => {

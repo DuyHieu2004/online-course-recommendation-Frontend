@@ -154,20 +154,23 @@ export class DataService {
     this.api.getMyCourses(page, 10).subscribe({
       next: (res: any) => {
         const data = Array.isArray(res) ? res : (res.data || []);
-        const mapped = (data || []).map((t: any) => ({
-          ...t,
-          course: {
-            id: t.khoaHoc?.maKhoaHoc,
-            title: t.khoaHoc?.tieuDe,
-            image: t.khoaHoc?.anhUrl || '',
-            rating: t.khoaHoc?.tbdanhGia ?? 0,
-            category: t.khoaHoc?.theLoai || 'Chưa phân loại',
-            instructor: t.khoaHoc?.giangVien || 'Chưa có',
-            modules: t.khoaHoc?.soLuongChuong ?? 0
-          },
-          progress: t.phanTramTienDo ?? 0,
-          endDate: t.ngayKetThuc
-        }));
+        const mapped = (data || []).map((t: any) => {
+          const k = t.khoaHoc || t.KhoaHoc;
+          return {
+            ...t,
+            course: {
+              id: k?.maKhoaHoc || k?.MaKhoaHoc,
+              title: k?.tieuDe || k?.TieuDe,
+              image: k?.anhUrl || k?.AnhUrl || '',
+              rating: k?.tbdanhGia ?? k?.TbdanhGia ?? 0,
+              category: k?.theLoai || k?.TheLoai || 'Chưa phân loại',
+              instructor: k?.giangVien || k?.GiangVien || 'Chưa có',
+              modules: k?.soLuongChuong ?? k?.SoLuongChuong ?? 0
+            },
+            progress: t.phanTramTienDo ?? t.PhanTramTienDo ?? 0,
+            endDate: t.ngayKetThuc || t.NgayKetThuc
+          };
+        });
         this.enrolledCourses.set(mapped);
         this.myCoursesTotal.set(res.totalCount || data.length);
         this.currentMyCoursesPage.set(res.page || page);
