@@ -81,15 +81,15 @@ import html2canvas from 'html2canvas';
               <i class="fa-solid fa-file-lines" style="font-size: 48px; margin-bottom: 16px; color: var(--gray-500)"></i>
               <p>Bài học này không có video</p>
             </div>
-            
+
             <div class="reading-content" *ngIf="currentLesson?.lyThuyet || currentLesson?.baiTap" style="width: 100%; max-width: 800px; padding: 40px; background: white; color: var(--gray-800); border-radius: 8px; margin: 20px; overflow-y: auto; text-align: left; max-height: 90%;">
               <h2 style="font-size: 24px; margin-bottom: 20px; color: var(--text-dark);">{{ getLessonTitle(currentLesson) }}</h2>
-              
+
               <div *ngIf="currentLesson?.lyThuyet" style="margin-bottom: 30px;">
                 <h4 style="font-size: 16px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-book"></i> Lý thuyết</h4>
                 <div [innerHTML]="formatContent(currentLesson.lyThuyet)" style="line-height: 1.8; font-size: 15px;"></div>
               </div>
-              
+
               <div *ngIf="currentLesson?.baiTap" style="padding: 20px; background: rgba(91,99,211,0.05); border-left: 4px solid var(--primary); border-radius: 4px; margin-bottom: 30px;">
                 <h4 style="font-size: 16px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-pen-to-square"></i> Bài tập</h4>
                 <div [innerHTML]="formatContent(currentLesson.baiTap)" style="line-height: 1.8; font-size: 15px;"></div>
@@ -811,17 +811,19 @@ export class LearnComponent implements OnInit, OnDestroy {
     }
 
     const currentDate = new Date().toLocaleDateString('vi-VN');
+
+    // Chữ ký (Font style)
     const signatureStyle = "font-family: 'Brush Script MT', 'Dancing Script', cursive; font-size: 32px; color: #0f172a;";
 
     const certHtml = `
       <div id="pdf-cert-container" style="
         width: 1000px;
         height: 700px;
-        padding: 50px; 
+        padding: 50px;
         box-sizing: border-box;
-        border: 20px solid #1e293b; 
-        background: #f8fafc; 
-        text-align: center; 
+        border: 20px solid #1e293b;
+        background: #f8fafc;
+        text-align: center;
         position: relative;
         font-family: 'Times New Roman', serif;
         box-shadow: inset 0 0 0 8px #cbd5e1;
@@ -830,24 +832,24 @@ export class LearnComponent implements OnInit, OnDestroy {
         <div style="position: absolute; top: 30px; left: 30px; width: 100px; height: 100px; background: #f59e0b; border-radius: 50%; opacity: 0.1;"></div>
         <div style="position: absolute; bottom: -50px; right: -50px; width: 250px; height: 250px; border: 15px solid #3b82f6; border-radius: 50%; opacity: 0.05;"></div>
         <div style="position: absolute; top: 100px; right: 80px; width: 50px; height: 50px; background: #10b981; transform: rotate(45deg); opacity: 0.1;"></div>
-        
+
         <div style="position: relative; z-index: 10;">
           <h1 style="color: #0f172a; font-size: 52px; margin: 40px 0 10px; text-transform: uppercase; letter-spacing: 3px;">Chứng Chỉ Hoàn Thành</h1>
           <p style="color: #64748b; font-size: 20px; margin-bottom: 40px; text-transform: uppercase; letter-spacing: 1px;">Giấy chứng nhận này được trao cho</p>
-          
+
           <h2 style="color: #1d4ed8; font-size: 46px; margin-bottom: 25px; font-style: italic; border-bottom: 3px solid #cbd5e1; padding-bottom: 15px; display: inline-block; min-width: 400px; font-weight: bold;">
             ${studentName}
           </h2>
-          
+
           <p style="color: #475569; font-size: 22px; margin-bottom: 20px;">Đã xuất sắc hoàn thành khóa học:</p>
           <h3 style="color: #0f172a; font-size: 34px; margin-bottom: 60px; font-weight: bold; padding: 0 40px;">${courseName}</h3>
-          
+
           <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 40px; position: absolute; bottom: 40px; width: 100%; box-sizing: border-box; left: 0;">
             <div style="text-align: left;">
               <p style="margin: 0; font-size: 16px; color: #64748b;">Mã chứng chỉ: CERT-${Math.floor(Math.random() * 90000) + 10000}</p>
               <p style="margin: 8px 0 0; font-size: 16px; color: #64748b;">Ngày cấp: ${currentDate}</p>
             </div>
-            
+
             <div style="text-align: center; margin-bottom: 10px;">
               <div style="width: 80px; height: 80px; background: url('https://img.icons8.com/color/96/000000/guarantee.png') center/cover; margin: 0 auto;"></div>
             </div>
@@ -933,13 +935,42 @@ export class LearnComponent implements OnInit, OnDestroy {
         backgroundColor: '#ffffff'
       }).then((canvas) => {
         const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+        // Khởi tạo file PDF (Landscape, A4)
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        // Căn chỉnh kích thước ảnh vào PDF A4 (297 x 210 mm)
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
         pdf.addImage(imgData, 'PNG', 0, (pdf.internal.pageSize.getHeight() - pdfHeight) / 2, pdfWidth, pdfHeight);
-        pdf.save(`ChungChi_${this.courseData?.maKhoaHoc || 'EduLearn'}.pdf`);
+
+        // Tải xuống
+        pdf.save(`ChungChi_${this.courseData?.maKhoaHoc || 'KhoaHoc'}.pdf`);
+
+        // Dọn dẹp
         document.body.removeChild(tempDiv);
         Swal.close();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Thành công',
+          text: 'Chứng chỉ của bạn đã được tải xuống máy tính!',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }).catch(err => {
+        console.error('Lỗi khi tạo PDF:', err);
+        document.body.removeChild(tempDiv);
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Không thể tạo chứng chỉ ngay lúc này. Vui lòng thử lại sau.'
+        });
       });
     }, 500);
   }

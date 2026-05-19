@@ -117,8 +117,12 @@ export class ApiService {
   // ========================
   // ORDERS
   // ========================
-  checkout(phuongThucThanhToan?: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/orders/checkout`, { phuongThucThanhToan });
+  checkout(phuongThucThanhToan?: string, maVoucher?: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/orders/checkout`, { phuongThucThanhToan, maVoucher });
+  }
+
+  applyVoucher(maVoucher: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/orders/apply-voucher`, { maVoucher });
   }
 
   getOrders(page = 1, pageSize = 10, search?: string, status?: string): Observable<any> {
@@ -218,6 +222,9 @@ export class ApiService {
   // ========================
   // PROMOTIONS (Admin)
   // ========================
+  applyPromotion(id: number, data: { courseIds: number[], categoryIds: number[] }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/promotions/${id}/apply`, data);
+  }
 
   getPromotions(page = 1, pageSize = 10, search?: string): Observable<any> {
     let params = new HttpParams().set('page', page).set('pageSize', pageSize);
@@ -240,6 +247,10 @@ export class ApiService {
   // ========================
   // INSTRUCTOR
   // ========================
+  getCourseSentimentDetail(courseId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/instructor/courses/${courseId}/sentiment-details`);
+  }
+
   getInstructorCourses(): Observable<any> {
     return this.http.get(`${this.apiUrl}/instructor/courses`);
   }
@@ -248,14 +259,26 @@ export class ApiService {
     return this.http.get(`${this.apiUrl}/instructor/students`, { params: { page, pageSize } });
   }
 
-  getInstructorStats(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/instructor/stats`);
+  getInstructorStats(range?: string, courseId?: number): Observable<any> {
+    let params = new HttpParams();
+    if (range) params = params.set('range', range);
+    if (courseId && courseId > 0) params = params.set('courseId', courseId.toString());
+    return this.http.get(`${this.apiUrl}/instructor/stats`, { params });
   }
 
-  getRevenueSeries(year?: number): Observable<any> {
+  getRevenueSeries(range?: string, courseId?: number): Observable<any> {
     let httpParams = new HttpParams();
-    if (year) httpParams = httpParams.set('year', year);
+    if (range) httpParams = httpParams.set('range', range);
+    if (courseId && courseId > 0) httpParams = httpParams.set('courseId', courseId.toString());
     return this.http.get(`${this.apiUrl}/instructor/stats/revenue-series`, { params: httpParams });
+  }
+
+  // Thêm mới hàm này
+  getInstructorTransactions(range?: string, courseId?: number): Observable<any> {
+    let params = new HttpParams();
+    if (range) params = params.set('range', range);
+    if (courseId && courseId > 0) params = params.set('courseId', courseId.toString());
+    return this.http.get(`${this.apiUrl}/instructor/transactions`, { params });
   }
 
   createChapter(courseId: number, data: { tieuDe: string }): Observable<any> {
@@ -334,16 +357,20 @@ export class ApiService {
   // ========================
   // RECOMMENDATIONS (Neo4j)
   // ========================
+  getPopularCourses(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/recommendation/popular`);
+  }
+
   getUserBasedRecommendations(userId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/Recommendation/user-based/${userId}`);
   }
 
-  getSimilarCourses(id: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/Recommendation/similar-course/${id}`);
+  getUserProfileRecommendations(userId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/recommendation/user-profile/${userId}`);
   }
 
-  getUserProfileRecommendations(userId: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/Recommendation/user-profile/${userId}`);
+  getSimilarCourses(courseId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/recommendation/similar-course/${courseId}`);
   }
 
   // ========================
