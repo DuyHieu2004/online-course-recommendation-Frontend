@@ -223,9 +223,16 @@ import Swal from 'sweetalert2';
                 </ng-container>
                 <ng-container *ngIf="!isEnrolled">
                   <button class="btn btn-primary btn-lg" style="width:100%" (click)="addToCart()" [disabled]="cartLoading">
-                    <ng-container *ngIf="!cartLoading"><i class="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng</ng-container>
+                    <ng-container *ngIf="!cartLoading">
+                      <i class="fa-solid fa-cart-shopping"></i>
+                      {{ isExpired ? 'Gia hạn khóa học' : 'Thêm vào giỏ hàng' }}
+                    </ng-container>
                     <ng-container *ngIf="cartLoading"><i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...</ng-container>
                   </button>
+
+                  <div class="enrolled-badge" *ngIf="isExpired" style="background: rgba(220, 53, 69, 0.1); color: #dc3545; margin-top: 10px;">
+                    <i class="fa-solid fa-clock"></i> Khóa học đã hết hạn, vui lòng mua lại để học tiếp.
+                  </div>
                 </ng-container>
                 <button class="btn btn-outline" style="width:100%;margin-top:8px" (click)="toggleLike()" [ngClass]="{'liked': isLiked}">
                   <span *ngIf="!isLiked"><i class="fa-regular fa-heart"></i> Thêm vào yêu thích</span>
@@ -681,6 +688,7 @@ export class CourseDetailComponent implements OnInit {
   cartLoading = false;
   isLiked = false;
   isEnrolled = false;
+  isExpired = false;
   enrollmentProgress = 0;
   hasReviewed = false;
   starsArr = [1, 2, 3, 4, 5];
@@ -729,7 +737,7 @@ export class CourseDetailComponent implements OnInit {
     this.apiService.getCourseById(this.courseId).subscribe({
       next: (data) => {
         console.log('[CourseDetail] API response received:', data);
-        this.course = data as CourseDetail;
+        this.course = data.course as CourseDetail;
         this.loading = false;
         this.cdr.detectChanges();
         console.log('[CourseDetail] course set, loading =', this.loading);
@@ -836,10 +844,24 @@ export class CourseDetailComponent implements OnInit {
     if (this.authService.isLoggedIn()) {
       this.apiService.getMyCourses(1, 100).subscribe({
         next: (res: any) => {
-          const data = Array.isArray(res) ? res : (res.data || []);
-          const enrollment = data.find((t: any) => t.khoaHoc?.maKhoaHoc === this.courseId);
-          this.isEnrolled = !!enrollment;
-          this.enrollmentProgress = enrollment?.phanTramTienDo ?? 0;
+          const data = Array.isArray(res) ? res : (res?.data || []);
+          const enrollment = data.find((t: any) => t.khoaHoc?.maKhoaHoc === this.courseId || t.KhoaHoc?.MaKhoaHoc === this.courseId);
+
+          if (enrollment) {
+            const tinhTrang = enrollment.tinhTrang || enrollment.TinhTrang;
+            // Nếu Backend trả về "Đã hết hạn" hoặc bị khóa
+            if (tinhTrang === 'Đã hết hạn' || tinhTrang === 'Bị khóa' || tinhTrang === false) {
+              this.isEnrolled = false; // Tắt nút Vào học ngay
+              this.isExpired = true;   // Bật cảnh báo hết hạn
+            } else {
+              this.isEnrolled = true;
+              this.isExpired = false;
+            }
+            this.enrollmentProgress = enrollment?.phanTramTienDo ?? 0;
+          } else {
+            this.isEnrolled = false;
+            this.isExpired = false;
+          }
           this.cdr.detectChanges();
         },
         error: () => {
