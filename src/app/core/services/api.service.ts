@@ -148,6 +148,10 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/learning/lesson/${lessonId}/complete`, {});
   }
 
+  saveLessonTime(lessonId: number, time: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/learning/lesson/${lessonId}/time`, time);
+  }
+
   getCertificates(): Observable<any> {
     return this.http.get(`${this.apiUrl}/learning/certificates`);
   }
@@ -194,6 +198,14 @@ export class ApiService {
 
   updateUserStatus(userId: number, tinhTrang: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/users/${userId}/status`, { tinhTrang });
+  }
+
+  getUserInterests(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/users/interests`);
+  }
+
+  updateUserInterests(categoryIds: number[]): Observable<any> {
+    return this.http.post(`${this.apiUrl}/users/interests`, categoryIds);
   }
 
   // ========================
@@ -277,6 +289,22 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/instructor/chapters/${chapterId}/lessons`, data);
   }
 
+  updateChapter(id: number, data: { tieuDe: string }): Observable<any> {
+    return this.http.put(`${this.apiUrl}/instructor/chapters/${id}`, data);
+  }
+
+  updateLesson(id: number, data: { maChuong?: number, lyThuyet?: string, baiTap?: string }): Observable<any> {
+    return this.http.put(`${this.apiUrl}/instructor/lessons/${id}`, data);
+  }
+
+  deleteChapter(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/instructor/chapters/${id}`);
+  }
+
+  deleteLesson(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/instructor/lessons/${id}`);
+  }
+
   uploadCourseCover(courseId: number, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
@@ -334,15 +362,15 @@ export class ApiService {
   }
 
   getUserBasedRecommendations(userId: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/recommendation/user-based/${userId}`);
+    return this.http.get(`${this.apiUrl}/Recommendation/user-based/${userId}`);
+  }
+
+  getSimilarCourses(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/Recommendation/similar-course/${id}`);
   }
 
   getUserProfileRecommendations(userId: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/recommendation/user-profile/${userId}`);
-  }
-
-  getSimilarCourses(courseId: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/recommendation/similar-course/${courseId}`);
+    return this.http.get(`${this.apiUrl}/Recommendation/user-profile/${userId}`);
   }
 
   // ========================
