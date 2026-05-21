@@ -75,7 +75,7 @@ import Swal from 'sweetalert2';
             <div *ngIf="activeTab === 'content'" class="tab-content">
               <h3>Nội dung khóa học</h3>
               <p style="margin-bottom: 16px; color: var(--gray-600)">{{ course.soLuongChuong }} chương • {{ course.soLuongBaiHoc }} bài học</p>
-              
+
               <div class="chapter-list">
                 <div class="chapter-item card" *ngFor="let chapter of course.chuongs; let i = index">
                   <div class="chapter-header">
@@ -125,8 +125,8 @@ import Swal from 'sweetalert2';
                 <div class="star-picker">
                   <label>Điểm đánh giá (Chọn từ 1-5 sao)</label>
                   <div class="stars-input" style="display: flex; gap: 8px; margin-top: 8px;">
-                    <span *ngFor="let s of [1,2,3,4,5]" 
-                          (click)="reviewRating = s" 
+                    <span *ngFor="let s of [1,2,3,4,5]"
+                          (click)="reviewRating = s"
                           style="font-size: 32px; cursor: pointer;"
                           [style.color]="s <= reviewRating ? '#fccc29' : '#e5e7eb'">
                       ★
@@ -191,7 +191,7 @@ import Swal from 'sweetalert2';
             <!-- Content: Instructor -->
             <div *ngIf="activeTab === 'instructor'" class="tab-content">
                <h3 style="margin-bottom: 24px;"><i class="fa-solid fa-chalkboard-user" style="color: var(--primary); margin-right: 8px;"></i> Đội ngũ Giảng viên</h3>
-               
+
                <!-- Fallback when no instructor is assigned -->
                <div *ngIf="!course.giangVien || course.giangVien.length === 0" style="padding: 40px 20px; text-align: center; border: 1px dashed var(--gray-300); border-radius: var(--radius-md); background: var(--gray-50);">
                  <i class="fa-solid fa-user-graduate" style="font-size: 48px; color: var(--gray-400); margin-bottom: 16px; display: block;"></i>
@@ -229,7 +229,7 @@ import Swal from 'sweetalert2';
               <div class="price-info">
                 <span class="price-main">{{ getDiscountedPrice(course) | number }}đ</span>
                 <span class="price-original" *ngIf="course.khuyenMai">{{ course.giaGoc | number }}đ</span>
-                
+
                 <ng-container *ngIf="isEnrolled">
                   <div class="completed-badge" *ngIf="isCompleted" style="text-align: center; padding: 12px; margin-bottom: 12px; background: rgba(34, 197, 94, 0.1); color: var(--success); border-radius: 8px; font-weight: 700; border: 1px solid rgba(34, 197, 94, 0.2);">
                     <i class="fa-solid fa-trophy" style="margin-right: 8px;"></i> Đã hoàn thành 100%
@@ -243,21 +243,17 @@ import Swal from 'sweetalert2';
                 </ng-container>
 
                 <ng-container *ngIf="!isEnrolled">
-                  <!-- Case: Expired -->
-                  <div *ngIf="isExpired" style="margin-bottom: 12px;">
-                    <button class="btn btn-danger btn-lg" style="width:100%; background: #ef4444; border-color: #ef4444;" (click)="addToCart()" [disabled]="cartLoading">
-                       <i class="fa-solid fa-rotate-left"></i> Mua lại để tiếp tục học
-                    </button>
-                    <div class="expired-badge" style="text-align: center; padding: 8px; margin-top: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 4px; font-size: 12px; font-weight: 600;">
-                      <i class="fa-solid fa-triangle-exclamation"></i> Khóa học của bạn đã hết hạn
-                    </div>
-                  </div>
-
-                  <!-- Case: Not enrolled yet -->
-                  <button *ngIf="!isExpired" class="btn btn-primary btn-lg" style="width:100%" (click)="addToCart()" [disabled]="cartLoading">
-                    <ng-container *ngIf="!cartLoading"><i class="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng</ng-container>
+                  <button class="btn btn-primary btn-lg" style="width:100%" (click)="addToCart()" [disabled]="cartLoading">
+                    <ng-container *ngIf="!cartLoading">
+                      <i class="fa-solid fa-cart-shopping"></i>
+                      {{ isExpired ? 'Gia hạn khóa học' : 'Thêm vào giỏ hàng' }}
+                    </ng-container>
                     <ng-container *ngIf="cartLoading"><i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...</ng-container>
                   </button>
+
+                  <div class="enrolled-badge" *ngIf="isExpired" style="background: rgba(220, 53, 69, 0.1); color: #dc3545; margin-top: 10px;">
+                    <i class="fa-solid fa-clock"></i> Khóa học đã hết hạn, vui lòng mua lại để học tiếp.
+                  </div>
                 </ng-container>
                 <button class="btn btn-outline" style="width:100%;margin-top:8px" (click)="toggleLike()" [ngClass]="{'liked': isLiked}">
                   <span *ngIf="!isLiked"><i class="fa-regular fa-heart"></i> Thêm vào yêu thích</span>
@@ -272,19 +268,66 @@ import Swal from 'sweetalert2';
                 </ul>
               </div>
             </div>
+          </aside>
+        </div>
 
-            <div class="related-section" *ngIf="similarCourses.length">
-              <h4>Gợi ý cho bạn</h4>
-              <div class="related-item card" *ngFor="let c of similarCourses" style="cursor: pointer" (click)="goToCourse(c.courseId)">
-                <div class="related-icon" style="font-size: 18px"><i class="fa-solid fa-bullseye"></i></div>
-                <div class="related-info">
-                  <strong>{{ c.title }}</strong>
-                  <span class="price-sm">{{ c.score | number:'1.2-2' }} điểm phù hợp</span>
+        <!-- SECTION 1: HỌC VIÊN CŨNG QUAN TÂM (User-Profile Based) -->
+        <section class="rec-section" *ngIf="userRecommendedCourses.length > 0">
+          <div class="rec-header">
+            <h3><i class="fa-solid fa-users" style="color: var(--primary); margin-right: 8px;"></i> Học viên cũng quan tâm</h3>
+            <p>Gợi ý dành riêng cho bạn dựa trên hồ sơ học tập và các khóa học phổ biến.</p>
+          </div>
+          <div class="rec-carousel">
+            <div class="course-item card" *ngFor="let rc of userRecommendedCourses" (click)="goToCourse(rc.id)">
+              <div class="item-image">
+                <img *ngIf="rc.image && rc.image.length > 5" [src]="rc.image" alt="course" style="width: 100%; height: 100%; object-fit: cover;">
+                <div *ngIf="!rc.image || rc.image.length <= 5" class="item-emoji" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%"><i class="fa-solid fa-box"></i></div>
+                <span class="ai-badge badge badge-primary" *ngIf="rc.score"><i class="fa-solid fa-bolt"></i> AI Match</span>
+              </div>
+              <div class="item-body">
+                <h3 class="line-clamp-2">{{ rc.title }}</h3>
+                <p class="instructor">{{ rc.instructor }}</p>
+                <div class="rating-row">
+                  <span class="stars">★★★★★</span>
+                  <span class="rating-text">{{ rc.rating | number:'1.1-1' }} ({{ rc.reviewCount }})</span>
+                </div>
+                <div class="price-row">
+                  <span class="price">{{ rc.price === 0 ? 'Miễn phí' : (rc.price | number) + 'đ' }}</span>
+                  <span *ngIf="rc.price > 0 && rc.originalPrice > rc.price" class="original">{{ rc.originalPrice | number }}đ</span>
                 </div>
               </div>
             </div>
-          </aside>
-        </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: KHÓA HỌC LIÊN QUAN (Item-Based Recommendation) -->
+        <section class="rec-section" *ngIf="similarCourses.length > 0">
+          <div class="rec-header">
+            <h3><i class="fa-solid fa-layer-group" style="color: var(--primary); margin-right: 8px;"></i> Khóa học liên quan</h3>
+            <p>Các khóa học có nội dung và kỹ năng tương tự với khóa học này.</p>
+          </div>
+          <div class="rec-carousel">
+            <div class="course-item card" *ngFor="let sc of similarCourses" (click)="goToCourse(sc.id)">
+              <div class="item-image">
+                <img *ngIf="sc.image && sc.image.length > 5" [src]="sc.image" alt="course" style="width: 100%; height: 100%; object-fit: cover;">
+                <div *ngIf="!sc.image || sc.image.length <= 5" class="item-emoji" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%"><i class="fa-solid fa-box"></i></div>
+                <span class="ai-badge badge" style="background:var(--success); color:white" *ngIf="sc.score"><i class="fa-solid fa-link"></i> Liên quan</span>
+              </div>
+              <div class="item-body">
+                <h3 class="line-clamp-2">{{ sc.title }}</h3>
+                <p class="instructor">{{ sc.instructor }}</p>
+                <div class="rating-row">
+                  <span class="stars">★★★★★</span>
+                  <span class="rating-text">{{ sc.rating | number:'1.1-1' }} ({{ sc.reviewCount }})</span>
+                </div>
+                <div class="price-row">
+                  <span class="price">{{ sc.price === 0 ? 'Miễn phí' : (sc.price | number) + 'đ' }}</span>
+                  <span *ngIf="sc.price > 0 && sc.originalPrice > sc.price" class="original">{{ sc.originalPrice | number }}đ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
     <div *ngIf="!course && !loading" style="padding: 100px; text-align: center; color: var(--gray-500);">
@@ -618,45 +661,76 @@ import Swal from 'sweetalert2';
     .btn-success:hover {
       background: linear-gradient(135deg, #059669, #047857);
     }
-    .related-section {
-      margin-top: 24px;
+
+    .rec-section {
+      margin-top: 40px;
+      padding-top: 40px;
+      border-top: 1px solid var(--gray-200);
+      animation: fadeIn 0.5s ease;
     }
-    .related-section h4 {
-      font-size: 16px;
-      margin-bottom: 12px;
+    .rec-header {
+      margin-bottom: 20px;
     }
-    .related-item {
-      padding: 12px;
+    .rec-header h3 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--gray-800);
+      margin-bottom: 6px;
+    }
+    .rec-header p {
+      color: var(--gray-500);
+      font-size: 14px;
+    }
+
+    /* Horizontal Scroll Container */
+    .rec-carousel {
       display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
-      transition: transform 0.2s;
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--gray-300) var(--gray-100);
     }
-    .related-item:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-sm);
+    .rec-carousel::-webkit-scrollbar { height: 8px; }
+    .rec-carousel::-webkit-scrollbar-track { background: var(--gray-100); border-radius: 10px; }
+    .rec-carousel::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 10px; }
+    .rec-carousel::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+
+    /* Reused CSS from CourseList for Visual Consistency */
+    .course-item {
+      width: 280px; /* Cố định width để scroll ngang đẹp */
+      flex-shrink: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      background: var(--white);
     }
-    .related-icon {
-      width: 44px;
-      height: 44px;
+    .course-item:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-md);
+    }
+    .item-image {
+      height: 150px;
+      background: var(--primary-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--primary-bg);
-      border-radius: var(--radius-sm);
+      position: relative;
     }
-    .related-info {
-      flex: 1;
-    }
-    .related-info strong {
-      display: block;
-      font-size: 13px;
-    }
-    .price-sm {
-      color: var(--success);
-      font-size: 12px;
-    }
+    .item-emoji { font-size: 56px; }
+    .ai-badge { position: absolute; bottom: 10px; left: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .item-body { padding: 16px; flex: 1; }
+    .item-body h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; color: var(--gray-800); }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .instructor { font-size: 13px; color: var(--gray-500); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rating-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .stars { color: #fccc29; font-size: 12px; }
+    .rating-text { font-size: 13px; color: var(--gray-500); font-weight: 500; }
+    .price-row { display: flex; align-items: center; gap: 8px; }
+    .price { font-weight: 800; color: var(--primary); font-size: 18px; }
+    .original { text-decoration: line-through; color: var(--gray-400); font-size: 14px; }
   `]
 })
 export class CourseDetailComponent implements OnInit {
@@ -674,6 +748,7 @@ export class CourseDetailComponent implements OnInit {
 
   reviews: Review[] = [];
   similarCourses: any[] = [];
+  userRecommendedCourses: any[] = [];
   cartLoading = false;
   isLiked = false;
   isEnrolled = false;
@@ -696,11 +771,18 @@ export class CourseDetailComponent implements OnInit {
       const id = params.get('id');
       if (id) {
         this.courseId = +id;
+        this.activeTab = 'overview';
         this.loadCourseData();
         this.loadReviews();
         this.loadSimilarCourses();
         this.checkLikeStatus();
         this.checkEnrolledStatus();
+
+        // Gọi API Recommendation
+        this.loadSimilarCourses();
+        if (this.isLoggedIn) {
+          this.loadUserRecommendations();
+        }
       }
     });
   }
@@ -719,47 +801,9 @@ export class CourseDetailComponent implements OnInit {
     this.loading = true;
     console.log('[CourseDetail] Loading course data for id:', this.courseId);
     this.apiService.getCourseById(this.courseId).subscribe({
-      next: (res) => {
-        console.log('[CourseDetail] API response received:', res);
-
-        // Bóc tách object (Thử các trường hợp bọc dữ liệu của API)
-        let data = res?.course || res?.data || res;
-
-        // Cập nhật trạng thái người dùng
-        this.isEnrolled = res?.isEnrolled ?? false;
-        this.isExpired = res?.isExpired ?? false;
-        this.isCompleted = res?.isCompleted ?? false;
-        this.myReview = res?.userReview ?? null;
-        if (this.myReview) this.hasReviewed = true;
-
-        if (data && typeof data === 'object') {
-          // Chuẩn hóa dữ liệu: Đảm bảo có cả camelCase và PascalCase cho Template
-          this.course = {
-            ...data,
-            maKhoaHoc: data.maKhoaHoc || data.MaKhoaHoc,
-            tieuDe: data.tieuDe || data.TieuDe || 'Khóa học',
-            moTa: data.moTa || data.MoTa || 'Chưa có thông tin mô tả chi tiết.',
-            giaGoc: data.giaGoc || data.GiaGoc || 0,
-            anhUrl: data.anhUrl || data.AnhUrl || '',
-            tbdanhGia: data.tbdanhGia || data.TbdanhGia || 0,
-            soLuongDanhGia: data.soLuongDanhGia || data.SoLuongDanhGia || 0,
-            soHocVien: data.soHocVien || data.SoHocVien || 0,
-            soLuongBaiHoc: data.soLuongBaiHoc || data.SoLuongBaiHoc || 0,
-            soLuongChuong: data.soLuongChuong || data.SoLuongChuong || 0,
-            theLoai: data.theLoai || data.TheLoai || null,
-            giangVien: data.giangVien || data.GiangVien || [],
-            // Chuẩn hóa Chương và Bài học bên trong
-            chuongs: (data.chuongs || data.Chuongs || []).map((ch: any) => ({
-              ...ch,
-              maChuong: ch.maChuong || ch.MaChuong,
-              tieuDe: ch.tieuDe || ch.TieuDe,
-              baiHocs: ch.baiHocs || ch.BaiHocs || []
-            }))
-          } as CourseDetail;
-        } else {
-          this.course = null;
-        }
-
+      next: (data) => {
+        console.log('[CourseDetail] API response received:', data);
+        this.course = data.course as CourseDetail;
         this.loading = false;
         // Nếu đã học rồi thì lấy lại tiến độ chính xác
         if (this.isEnrolled) {
@@ -815,10 +859,13 @@ export class CourseDetailComponent implements OnInit {
     }
   }
 
+  // 1. Tải Khóa học liên quan (Item-based)
   loadSimilarCourses() {
     this.apiService.getSimilarCourses(this.courseId).subscribe({
       next: (res) => {
-        this.similarCourses = res || [];
+        // Map dữ liệu từ Neo4j với DataService để lấy Image, Price đầy đủ
+        this.similarCourses = this.enrichCourseData(res || []);
+        this.cdr.detectChanges();
       },
       error: () => {
         this.similarCourses = [];
@@ -826,14 +873,80 @@ export class CourseDetailComponent implements OnInit {
     });
   }
 
+  // 2. Tải Gợi ý theo Profile (User-based)
+  loadUserRecommendations() {
+    const userId = this.authService.currentUser()?.userId;
+    if (!userId) return;
+
+    this.apiService.getUserProfileRecommendations(userId).subscribe({
+      next: (res) => {
+        this.userRecommendedCourses = this.enrichCourseData(res || []);
+
+        // Lọc bỏ khóa học hiện tại đang xem (nếu có trong mảng gợi ý)
+        this.userRecommendedCourses = this.userRecommendedCourses.filter(c => c.id !== this.courseId);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.userRecommendedCourses = [];
+      }
+    });
+  }
+
+  // Hàm Map Data Neo4j (Chỉ có ID, Score) với Data Frontend (Lấy Image, Giá)
+  enrichCourseData(neo4jData: any[]): any[] {
+    const allCourses = this.dataService.courses();
+
+    return neo4jData.map(item => {
+      // 1. Tìm xem khóa học có trong cache Angular (Trang 1) hay không
+      const fullCourse = allCourses.find(c => c.id === item.courseId || c.id === item.CourseId);
+
+      // 2. Chấm dứt tình trạng gán cứng bằng 0, rỗng hoặc EduLearn
+      // Dùng ?? và || để lấy thông tin trực tiếp từ `item` mà Backend Neo4j nhả ra
+      const originalPrice = fullCourse?.originalPrice ?? item.originalPrice ?? item.OriginalPrice ?? 0;
+      const price = fullCourse?.price ?? originalPrice; // Nếu không có giá sau giảm, dùng bằng giá gốc
+
+      const title = fullCourse?.title || item.title || item.Title || 'Chưa có tiêu đề';
+      const image = fullCourse?.image || item.image || item.Image || '';
+      const instructor = fullCourse?.instructor || item.instructor || item.Instructor || 'Đang cập nhật';
+      const rating = fullCourse?.rating || item.averageRating || item.AverageRating || 0;
+      const reviewCount = fullCourse?.reviewCount || item.totalReviews || item.TotalReviews || 0;
+
+      return {
+         id: item.courseId || item.CourseId,
+         title: title,
+         score: item.score || item.Score,
+         rating: rating,
+         reviewCount: reviewCount,
+         image: image,
+         price: price,
+         originalPrice: originalPrice,
+         instructor: instructor
+      };
+    });
+  }
+
   checkEnrolledStatus() {
     if (this.authService.isLoggedIn()) {
       this.apiService.getMyCourses(1, 100).subscribe({
         next: (res: any) => {
-          const data = Array.isArray(res) ? res : (res.data || []);
-          const enrollment = data.find((t: any) => t.khoaHoc?.maKhoaHoc === this.courseId);
-          this.isEnrolled = !!enrollment;
-          this.enrollmentProgress = enrollment?.phanTramTienDo ?? 0;
+          const data = Array.isArray(res) ? res : (res?.data || []);
+          const enrollment = data.find((t: any) => t.khoaHoc?.maKhoaHoc === this.courseId || t.KhoaHoc?.MaKhoaHoc === this.courseId);
+
+          if (enrollment) {
+            const tinhTrang = enrollment.tinhTrang || enrollment.TinhTrang;
+            // Nếu Backend trả về "Đã hết hạn" hoặc bị khóa
+            if (tinhTrang === 'Đã hết hạn' || tinhTrang === 'Bị khóa' || tinhTrang === false) {
+              this.isEnrolled = false; // Tắt nút Vào học ngay
+              this.isExpired = true;   // Bật cảnh báo hết hạn
+            } else {
+              this.isEnrolled = true;
+              this.isExpired = false;
+            }
+            this.enrollmentProgress = enrollment?.phanTramTienDo ?? 0;
+          } else {
+            this.isEnrolled = false;
+            this.isExpired = false;
+          }
           this.cdr.detectChanges();
         },
         error: () => {
@@ -844,8 +957,9 @@ export class CourseDetailComponent implements OnInit {
   }
 
   goToCourse(id: number) {
-    this.router.navigate(['/course', id]);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.router.navigate(['/course', id]).then(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   addToCart() {

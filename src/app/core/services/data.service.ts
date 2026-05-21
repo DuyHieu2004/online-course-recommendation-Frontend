@@ -22,19 +22,19 @@ export class DataService {
   readonly categoriesRaw = signal<Category[]>([]);
   readonly currentCategoriesPage = signal<number>(1);
   readonly categoriesTotal = signal<number>(0);
-  
+
   readonly notifications = signal<any[]>([]);
   readonly unreadNotifications = signal<number>(0);
-  
+
   readonly currentPromotionsPage = signal<number>(1);
   readonly promotionsTotal = signal<number>(0);
-  
+
   readonly currentUsersPage = signal<number>(1);
   readonly usersTotal = signal<number>(0);
-  
+
   readonly currentMyCoursesPage = signal<number>(1);
   readonly myCoursesTotal = signal<number>(0);
-  
+
   readonly adminStats = signal({
     totalUsers: 0,
     students: 0,
@@ -99,7 +99,7 @@ export class DataService {
         this.categoriesRaw.set(cats);
         this.categoriesTotal.set(res.totalCount || cats.length);
         this.currentCategoriesPage.set(res.page || page);
-        
+
         // Cập nhật mảng categories (cho các Dropdown không dùng phân trang)
         // Lưu ý: Nếu cần load TOÀN BỘ dropdown, phải gọi 1 API riêng hoặc lấy pageSize rất lớn.
         // Tạm thời ở đây ta vẫn ánh xạ cats cho Home.

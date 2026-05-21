@@ -74,6 +74,9 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
                 </span>
               </td>
               <td>
+                <button class="btn btn-outline btn-sm" style="color: var(--primary); border-color: var(--primary);" (click)="openApplyModal(promo)">
+                  <i class="fa-solid fa-link"></i> Áp dụng
+                </button>
                 <button class="btn btn-outline btn-sm" (click)="openEditModal(promo)">
                   <i class="fa-solid fa-pen-to-square"></i> Sửa
                 </button>
@@ -165,6 +168,61 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
         </div>
       </div>
 
+      <div class="modal-overlay" *ngIf="showApplyModal" (click)="closeApplyModal()">
+        <div class="modal-card" style="width: 650px;" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-tags"></i> Áp dụng: {{ applyingPromo?.tenChuongTrinh }}</h2>
+            <button class="modal-close" (click)="closeApplyModal()"><i class="fa-solid fa-times"></i></button>
+          </div>
+          
+          <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+            <div class="form-group">
+              <label>Phương thức áp dụng</label>
+              <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                <label style="font-weight: normal; cursor: pointer;">
+                  <input type="radio" name="applyMode" value="category" [(ngModel)]="applyMode"> Theo Thể Loại
+                </label>
+                <label style="font-weight: normal; cursor: pointer;">
+                  <input type="radio" name="applyMode" value="course" [(ngModel)]="applyMode"> Khóa học chỉ định
+                </label>
+              </div>
+            </div>
+
+            <div *ngIf="applyMode === 'category'" class="selection-list">
+              <div *ngFor="let cat of availableCategories" class="checkbox-item">
+                <label>
+                  <input type="checkbox" 
+                        [checked]="selectedCategoryIds.includes(cat.maTheLoai)"
+                        (change)="toggleSelection(cat.maTheLoai, 'category')"> 
+                  {{ cat.ten }}
+                </label>
+              </div>
+            </div>
+
+            <div *ngIf="applyMode === 'course'" class="selection-list">
+              <input type="text" class="form-input" placeholder="Tìm khóa học..." [(ngModel)]="courseSearch" style="margin-bottom: 15px;">
+              <div *ngFor="let course of filteredCourses" class="checkbox-item">
+                <label>
+                  <input type="checkbox" 
+                        [checked]="selectedCourseIds.includes(course.maKhoaHoc)"
+                        (change)="toggleSelection(course.maKhoaHoc, 'course')"> 
+                  [{{ course.theLoai?.ten || 'Chưa phân loại' }}] {{ course.tieuDe }} 
+                  <span style="color: var(--gray-400); font-size: 12px;">(Giá: {{ course.giaGoc | number }}đ)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="modal-btn cancel" (click)="closeApplyModal()">Hủy bỏ</button>
+            <button class="modal-btn save" (click)="submitApplyPromotion()" [disabled]="isSaving">
+              <i [class]="isSaving ? 'fa-solid fa-circle-notch fa-spin' : 'fa-solid fa-check'"></i>
+              {{ isSaving ? 'Đang lưu...' : 'Xác nhận áp dụng' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Toast -->
       <div class="toast" *ngIf="toastMessage" [class.error]="toastType === 'error'" (click)="toastMessage = ''">
         <i [class]="toastType === 'error' ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-circle-check'"></i>
@@ -226,6 +284,11 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
     .modal-btn.delete-btn { background: #DC3545; color: white; }
     .modal-btn.delete-btn:disabled { opacity: 0.6; }
 
+    .selection-list { border: 1px solid var(--gray-200); border-radius: 8px; padding: 15px; max-height: 300px; overflow-y: auto; background: var(--gray-50); }
+    .checkbox-item { margin-bottom: 10px; }
+    .checkbox-item label { display: flex; align-items: center; gap: 10px; font-weight: normal; cursor: pointer; color: var(--gray-700); }
+    .checkbox-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+
     /* Toast */
     .toast {
       position: fixed; bottom: 32px; right: 32px; background: var(--gray-800); color: white;
@@ -258,12 +321,28 @@ export class AdminPromotionsComponent implements OnInit {
   formStartDate = '';
   formEndDate = '';
 
+  showApplyModal = false;
+  applyingPromo: any = null;
+  applyMode: 'category' | 'course' = 'category';
+  
+  availableCategories: any[] = [];
+  availableCourses: any[] = [];
+  
+  selectedCategoryIds: number[] = [];
+  selectedCourseIds: number[] = [];
+  courseSearch = '';
+
   // Toast
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
 
   get activeCount() { return this.promotions.filter(p => p.tinhTrang === 'active').length; }
   get expiredCount() { return this.promotions.filter(p => p.tinhTrang === 'expired').length; }
+  get filteredCourses() {
+    if (!this.courseSearch.trim()) return this.availableCourses;
+    const lower = this.courseSearch.toLowerCase();
+    return this.availableCourses.filter(c => c.tieuDe.toLowerCase().includes(lower));
+  }
 
   ngOnInit() {
     this.loadPromotions();
@@ -370,6 +449,76 @@ export class AdminPromotionsComponent implements OnInit {
       },
       error: (err) => {
         this.showToast(err.error?.message || 'Lỗi khi xóa', 'error');
+        this.isSaving = false;
+      }
+    });
+  }
+
+  openApplyModal(promo: any) {
+    this.applyingPromo = promo;
+    this.selectedCategoryIds = [];
+    this.selectedCourseIds = [];
+    this.applyMode = 'category';
+    this.courseSearch = '';
+    
+    // Fetch data cần thiết để cho phép admin chọn
+    this.fetchDataForApply();
+    this.showApplyModal = true;
+  }
+
+  closeApplyModal() {
+    this.showApplyModal = false;
+    this.applyingPromo = null;
+  }
+
+  fetchDataForApply() {
+    // Lấy tất cả danh mục (có thể dùng getCategories page 1 pageSize lớn)
+    this.api.getCategories(1, 100).subscribe(res => {
+      this.availableCategories = Array.isArray(res) ? res : (res.data || []);
+    });
+
+    // Lấy tất cả khóa học để map
+    this.api.getAdminCourses({ page: 1, pageSize: 500 }).subscribe(res => {
+      this.availableCourses = res.data || [];
+      
+      // Auto tick những khóa học đang được áp khuyến mãi này
+      const currentPromoId = this.applyingPromo?.maKhuyenMai;
+      // Lưu ý: Cần update API backend GetAdminCourses để trả về MaKhuyenMai hoặc check logic. 
+      // Tạm thời nếu mảng trả về có KhuyenMai, ta map ra.
+      this.selectedCourseIds = this.availableCourses
+        .filter(c => c.KhuyenMai?.maKhuyenMai === currentPromoId)
+        .map(c => c.maKhoaHoc);
+    });
+  }
+
+  toggleSelection(id: number, type: 'category' | 'course') {
+    const list = type === 'category' ? this.selectedCategoryIds : this.selectedCourseIds;
+    const index = list.indexOf(id);
+    if (index > -1) {
+      list.splice(index, 1);
+    } else {
+      list.push(id);
+    }
+  }
+
+  submitApplyPromotion() {
+    if (!this.applyingPromo) return;
+    this.isSaving = true;
+
+    const payload = {
+      courseIds: this.applyMode === 'course' ? this.selectedCourseIds : [],
+      categoryIds: this.applyMode === 'category' ? this.selectedCategoryIds : []
+    };
+
+    this.api.applyPromotion(this.applyingPromo.maKhuyenMai, payload).subscribe({
+      next: (res) => {
+        this.showToast(res.message || 'Áp dụng khuyến mãi thành công!');
+        this.isSaving = false;
+        this.closeApplyModal();
+        this.loadPromotions(); // Load lại để update "Số khóa học" trên UI
+      },
+      error: (err) => {
+        this.showToast(err.error?.message || 'Lỗi khi áp dụng', 'error');
         this.isSaving = false;
       }
     });

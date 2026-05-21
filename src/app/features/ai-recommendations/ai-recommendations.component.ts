@@ -1,17 +1,18 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HeaderComponent } from '../../shared/components/header/header.component';
-import { ApiService } from '../../core/services/api.service';
-import { AuthService } from '../../core/services/auth.service';
-import { DataService } from '../../core/services/data.service';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 import { RouterLink } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
+import { HeaderComponent } from '../../shared/components/header/header.component';
+import { CourseCardComponent } from '../../shared/components/course-card/course-card.component';
+import { DataService } from '../../core/services/data.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
 
 @Component({
   selector: 'app-ai-recommendations',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, RouterLink],
+  imports: [CommonModule, HeaderComponent, CourseCardComponent, RouterLink],
   template: `
     <app-header></app-header>
     <div class="ai-page">
@@ -19,135 +20,89 @@ import { RouterLink } from '@angular/router';
       <div class="bg-glow glow-1"></div>
       <div class="bg-glow glow-2"></div>
 
-      <div class="container">
-        <!-- Hero Section -->
-        <header class="ai-hero">
-          <div class="ai-badge-top">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Powered Discovery
-          </div>
-          <h1>Gợi ý lộ trình <span class="text-gradient">Học tập Cá nhân</span></h1>
-          <p class="ai-desc">
-            Hệ thống AI của EduLearn đã phân tích kỹ năng và sở thích của bạn để đưa ra những đề xuất phù hợp nhất.
-          </p>
-        </header>
+      <div class="container" style="padding-top: 40px;">
 
-        <!-- Interests Selection (If logged in) -->
-        <section class="interests-section" *ngIf="auth.isLoggedIn()">
-           <div class="section-header">
-            <div class="icon-pulse orange"><i class="fa-solid fa-heart"></i></div>
-            <h2>Lĩnh vực bạn quan tâm</h2>
-            <button class="btn-edit-interests" (click)="toggleEditInterests()">
-               {{ isEditingInterests ? 'Lưu lại' : 'Chỉnh sửa' }}
-            </button>
-          </div>
-          
-          <div class="interests-chips">
-            <div *ngFor="let cat of dataService.categoriesRaw()" 
-                 class="chip" 
-                 [class.active]="isInterest(cat.maTheLoai)"
-                 (click)="toggleInterest(cat.maTheLoai)">
-              {{ cat.ten }}
-              <i class="fa-solid fa-check" *ngIf="isInterest(cat.maTheLoai)"></i>
-            </div>
-          </div>
-        </section>
-
-        <!-- Loading State -->
-        <div class="loading-wrapper" *ngIf="loading()">
-           <div class="shimmer-card" *ngFor="let i of [1,2,3]"></div>
+        <div *ngIf="!authService.isLoggedIn()" class="empty-msg text-center mt-5" style="padding: 60px 20px;">
+          <div class="icon-pulse mx-auto mb-3" style="width: 60px; height: 60px; font-size: 28px;"><i class="fa-solid fa-lock"></i></div>
+          <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">Đăng nhập để xem gợi ý</h2>
+          <p style="color: var(--clr-text-muted);">Hệ thống AI cần phân tích hành vi của bạn để có thể đưa ra các khóa học phù hợp nhất.</p>
+          <a routerLink="/login" class="btn-join" style="display: inline-block; margin-top: 16px;">Đăng nhập ngay</a>
         </div>
 
-        <ng-container *ngIf="!loading()">
-          <!-- Section 1: Top Matches (Content-Based) -->
-          <section class="ai-section" *ngIf="personalizedCourses().length > 0">
+        <ng-container *ngIf="authService.isLoggedIn()">
+          <section class="ai-section">
             <div class="section-header">
-              <div class="icon-pulse purple"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-              <h2>Gợi ý cá nhân hoá</h2>
-              <span class="section-tag">Dựa trên sở thích của bạn</span>
-            </div>
-            
-            <div class="ai-grid top-grid">
-              <div *ngFor="let course of personalizedCourses()" class="ai-card">
-                <div class="ai-card-image" [style.background-image]="course.image ? 'url(' + course.image + ')' : ''">
-                  <div class="match-badge">
-                    <span class="sparkle-icon">✨</span> {{ (course.score * 100) | number:'1.0-0' }}% Phù hợp
-                  </div>
-                </div>
-                
-                <div class="ai-card-body">
-                  <h3 [routerLink]="['/course', course.id]">{{ course.title }}</h3>
-                  <p class="ai-instructor"><i class="fa-solid fa-chalkboard-user"></i> {{ course.instructor }}</p>
-                  
-                  <div class="ai-stats">
-                    <span><i class="fa-solid fa-star"></i> {{ course.averageRating || 5 }}</span>
-                    <span><i class="fa-solid fa-users"></i> {{ course.totalReviews || 0 }} đánh giá</span>
-                  </div>
-                  
-                  <div class="ai-card-footer">
-                    <span class="ai-price">{{ course.originalPrice | number }}đ</span>
-                    <button class="btn-add-cart" (click)="addToCart(course.id)">
-                      <i class="fa-solid fa-cart-plus"></i> Thêm
-                    </button>
-                  </div>
-                </div>
+              <div class="icon-pulse"><i class="fa-solid fa-fire"></i></div>
+              <div>
+                <h2>Những khóa học thịnh hành nhất</h2>
+                <p class="text-muted" style="margin-top: 4px; font-size: 14px;">Gợi ý dựa trên những học viên có sở thích tương đồng với bạn.</p>
               </div>
+            </div>
+
+            <div *ngIf="loadingTrending" class="course-grid">
+              <div *ngFor="let i of skeletonCards" class="recommendation-skeleton"></div>
+            </div>
+
+            <div *ngIf="!loadingTrending && trendingCourses.length > 0" class="course-grid">
+              <app-course-card
+                *ngFor="let course of trendingCourses"
+                [course]="course"
+                [showCartBtn]="true">
+              </app-course-card>
+            </div>
+            <div *ngIf="!loadingTrending && trendingCourses.length === 0" class="empty-msg">
+              Chưa có đủ dữ liệu học viên tương đồng để đề xuất thịnh hành cho bạn.
             </div>
           </section>
 
-          <!-- Section 2: Trending Courses -->
-          <section class="ai-section mt-5" *ngIf="trendingCourses().length > 0">
+          <section class="ai-section mt-5">
             <div class="section-header">
-              <div class="icon-pulse orange"><i class="fa-solid fa-fire"></i></div>
-              <h2>Xu hướng hiện nay</h2>
-            </div>
-            
-            <div class="ai-carousel">
-              <div *ngFor="let course of trendingCourses()" class="ai-card-sm">
-                <div class="ai-sm-image" [style.background-image]="course.image ? 'url(' + course.image + ')' : ''">
-                   <div class="trending-tag">HOT</div>
-                </div>
-                <div class="ai-sm-body">
-                  <h4 [routerLink]="['/course', course.id]">{{ course.title }}</h4>
-                  <div class="ai-card-footer-sm">
-                    <span class="ai-price-sm">{{ course.price | number }}đ</span>
-                    <button class="btn-cart-sm" (click)="addToCart(course.id)"><i class="fa-solid fa-plus"></i></button>
-                  </div>
-                </div>
+              <div class="icon-pulse blue"><i class="fa-solid fa-address-card"></i></div>
+              <div>
+                <h2>Người học tương tự bạn cũng xem</h2>
+                <p class="text-muted" style="margin-top: 4px; font-size: 14px;">Đề xuất cá nhân hóa chuyên sâu dựa trên các đánh giá của bạn.</p>
               </div>
+            </div>
+
+            <div *ngIf="loadingProfile" class="course-grid">
+              <div *ngFor="let i of skeletonCards" class="recommendation-skeleton"></div>
+            </div>
+
+            <div *ngIf="!loadingProfile && profileCourses.length > 0" class="course-grid">
+              <app-course-card
+                *ngFor="let course of profileCourses"
+                [course]="course"
+                [showCartBtn]="true">
+              </app-course-card>
+            </div>
+            <div *ngIf="!loadingProfile && profileCourses.length === 0" class="empty-msg">
+              Hãy tương tác và đánh giá thêm các khóa học để AI hiểu rõ hơn về sở thích của bạn.
             </div>
           </section>
 
-          <!-- Section 3: Collaborative Filtering -->
-          <section class="ai-section mt-5" *ngIf="collaborativeCourses().length > 0">
+          <section class="ai-section mt-5">
             <div class="section-header">
-              <div class="icon-pulse blue"><i class="fa-solid fa-people-group"></i></div>
-              <h2>Người học tương tự bạn cũng xem</h2>
-            </div>
-            
-            <div class="ai-carousel">
-              <div *ngFor="let course of collaborativeCourses()" class="ai-card-sm">
-                <div class="ai-sm-image" [style.background-image]="course.image ? 'url(' + course.image + ')' : ''">
-                   <div class="match-badge-sm">{{ (course.score * 100) | number:'1.0-0' }}%</div>
-                </div>
-                <div class="ai-sm-body">
-                  <h4 [routerLink]="['/course', course.id]">{{ course.title }}</h4>
-                  <div class="ai-card-footer-sm">
-                    <span class="ai-price-sm">{{ course.originalPrice | number }}đ</span>
-                    <button class="btn-cart-sm" (click)="addToCart(course.id)"><i class="fa-solid fa-plus"></i></button>
-                  </div>
-                </div>
+              <div class="icon-pulse" style="background: #f3e8ff; color: #a855f7;"><i class="fa-solid fa-layer-group"></i></div>
+              <div>
+                <h2>Gợi ý từ lộ trình học của bạn</h2>
+                <p class="text-muted" style="margin-top: 4px; font-size: 14px;">Mở rộng từ tất cả các khóa học bạn đang theo học và đã hoàn thành.</p>
               </div>
             </div>
-          </section>
 
-          <!-- Section 3: Trending (Empty State Fallback) -->
-          <section class="ai-section mt-5" *ngIf="personalizedCourses().length === 0 && collaborativeCourses().length === 0 && trendingCourses().length === 0 && !loading()">
-             <div class="empty-ai">
-                <i class="fa-solid fa-robot"></i>
-                <h3>Bạn chưa có lịch sử học tập?</h3>
-                <p>Hãy chọn những lĩnh vực bạn quan tâm phía trên hoặc bắt đầu khám phá các khóa học phổ biến để AI có thể hiểu bạn hơn.</p>
-                <a routerLink="/course" class="btn-browse">Khám phá ngay</a>
-             </div>
+            <div *ngIf="loadingRelated" class="course-grid">
+              <div *ngFor="let i of skeletonCards" class="recommendation-skeleton"></div>
+            </div>
+
+            <div *ngIf="!loadingRelated && relatedCourses.length > 0" class="course-grid">
+              <app-course-card
+                *ngFor="let course of relatedCourses"
+                [course]="course"
+                [showCartBtn]="true">
+              </app-course-card>
+            </div>
+            <div *ngIf="!loadingRelated && relatedCourses.length === 0" class="empty-msg">
+              Khi bạn ghi danh thêm khóa học, AI sẽ tự động phân tích và xây dựng lộ trình tiếp theo.
+            </div>
           </section>
         </ng-container>
       </div>
@@ -158,13 +113,13 @@ import { RouterLink } from '@angular/router';
     :host {
       --clr-brand: #ea580c;
       --clr-brand-light: #fff7ed;
-      --clr-ai-1: #8b5cf6; 
+      --clr-ai-1: #8b5cf6;
       --clr-ai-2: #3b82f6;
       --clr-text-main: #1f2937;
       --clr-text-muted: #6b7280;
       --clr-bg-main: #f8fafc;
       --clr-white: #ffffff;
-      --shadow-soft: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      --clr-border: #e2e8f0;
     }
 
     .ai-page {
@@ -195,420 +150,249 @@ import { RouterLink } from '@angular/router';
     .glow-1 { top: -200px; left: -100px; background: rgba(139, 92, 246, 0.1); }
     .glow-2 { top: 40%; right: -200px; background: rgba(234, 88, 12, 0.08); }
 
-    .ai-hero {
-      padding: 80px 0 60px;
-      text-align: center;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .ai-badge-top {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(139, 92, 246, 0.1);
-      color: var(--clr-ai-1);
-      padding: 8px 24px;
-      border-radius: 40px;
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 24px;
-      border: 1px solid rgba(139, 92, 246, 0.2);
-    }
-
-    .ai-hero h1 {
-      font-size: 56px;
-      font-weight: 900;
-      margin-bottom: 20px;
-      letter-spacing: -2px;
-    }
-
-    .text-gradient {
-      background: linear-gradient(135deg, var(--clr-ai-1) 0%, var(--clr-ai-2) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .ai-desc {
-      font-size: 18px;
-      color: var(--clr-text-muted);
-      line-height: 1.6;
-    }
-
+    /* ===== Section Headers ===== */
     .section-header {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
     .icon-pulse {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--clr-brand-light);
+      color: var(--clr-brand);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      flex-shrink: 0;
     }
-    .purple { background: #f5f3ff; color: var(--clr-ai-1); }
-    .blue { background: #eff6ff; color: var(--clr-ai-2); }
-    .orange { background: #fff7ed; color: var(--clr-brand); }
+    .icon-pulse.blue { background: #eff6ff; color: var(--clr-ai-2); }
+    .ai-section h2 { font-size: 20px; font-weight: 800; margin: 0;}
+    .text-muted { color: var(--clr-text-muted); }
+    .mt-5 { margin-top: 60px; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    .text-center { text-align: center; }
 
-    .ai-section h2 { font-size: 28px; font-weight: 800; }
-    .section-tag {
-       background: #f1f5f9;
-       color: #64748b;
-       padding: 4px 12px;
-       border-radius: 6px;
-       font-size: 12px;
-       font-weight: 600;
-       text-transform: uppercase;
-    }
-
-    .interests-section {
-       background: white;
-       padding: 32px;
-       border-radius: 24px;
-       margin-bottom: 60px;
-       border: 1px solid #f1f5f9;
-       box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-    }
-
-    .btn-edit-interests {
-       margin-left: auto;
-       background: none;
-       border: 1px solid var(--clr-brand);
-       color: var(--clr-brand);
-       padding: 8px 20px;
-       border-radius: 10px;
-       font-weight: 600;
-       cursor: pointer;
-       transition: all 0.2s;
-    }
-    .btn-edit-interests:hover {
-       background: var(--clr-brand);
-       color: white;
-    }
-
-    .interests-chips {
-       display: flex;
-       flex-wrap: wrap;
-       gap: 12px;
-    }
-    .chip {
-       padding: 10px 24px;
-       background: #f8fafc;
-       border: 1px solid #e2e8f0;
-       border-radius: 50px;
-       font-size: 14px;
-       font-weight: 600;
-       cursor: pointer;
-       transition: all 0.2s;
-       display: flex;
-       align-items: center;
-       gap: 8px;
-    }
-    .chip:hover {
-       border-color: var(--clr-brand);
-       background: var(--clr-brand-light);
-    }
-    .chip.active {
-       background: var(--clr-brand);
-       color: white;
-       border-color: var(--clr-brand);
-       box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);
-    }
-
-    .ai-grid {
+    /* ===== Cards Grid ===== */
+    .course-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-      gap: 32px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
     }
 
-    .ai-card {
-      background: white;
-      border-radius: 24px;
-      border: 1px solid #f1f5f9;
-      overflow: hidden;
-      transition: all 0.3s ease;
-      box-shadow: var(--shadow-soft);
-    }
-    .ai-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+    .recommendation-skeleton {
+      min-height: 280px;
+      border-radius: 16px;
+      border: 1px solid var(--clr-border);
+      background: linear-gradient(110deg, #f8fafc 8%, #eef2ff 18%, #f8fafc 33%);
+      background-size: 200% 100%;
+      animation: loadingShimmer 1.4s linear infinite;
     }
 
-    .ai-card-image {
-      height: 220px;
-      background-size: cover;
-      background-position: center;
-      position: relative;
-    }
-
-    .match-badge {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(4px);
-      color: var(--clr-ai-1);
-      padding: 8px 16px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 800;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .ai-card-body { padding: 28px; }
-    .ai-card-body h3 { 
-       font-size: 22px; 
-       font-weight: 800; 
-       margin-bottom: 12px;
-       cursor: pointer;
-    }
-    .ai-card-body h3:hover { color: var(--clr-brand); }
-
-    .ai-instructor { font-size: 15px; color: var(--clr-text-muted); margin-bottom: 16px; }
-    .ai-stats {
-       display: flex;
-       gap: 16px;
-       font-size: 14px;
-       color: #64748b;
-       margin-bottom: 24px;
-    }
-    .ai-stats i { color: #fbbf24; }
-
-    .ai-card-footer {
-       display: flex;
-       justify-content: space-between;
-       align-items: center;
-       padding-top: 20px;
-       border-top: 1px solid #f1f5f9;
+    .empty-msg {
+      border: 1px dashed #cbd5e1;
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      color: var(--clr-text-muted);
+      background: rgba(255, 255, 255, 0.6);
+      font-size: 15px;
     }
     .ai-price { font-size: 24px; font-weight: 900; color: var(--clr-text-main); }
 
-    .btn-add-cart {
-       background: var(--clr-brand);
-       color: white;
-       border: none;
-       padding: 12px 24px;
-       border-radius: 14px;
-       font-weight: 700;
-       cursor: pointer;
-       transition: all 0.2s;
+    .btn-join {
+      background: var(--clr-brand-light);
+      color: var(--clr-brand);
+      border: 1px solid transparent;
+      padding: 10px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
     }
-    .btn-add-cart:hover { transform: scale(1.05); }
-
-    /* Small Cards Carousel */
-    .ai-carousel {
-       display: flex;
-       gap: 20px;
-       overflow-x: auto;
-       padding: 10px 0 30px;
-    }
-    .ai-carousel::-webkit-scrollbar { height: 4px; }
-    .ai-carousel::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-
-    .ai-card-sm {
-       min-width: 260px;
-       background: white;
-       border-radius: 20px;
-       border: 1px solid #f1f5f9;
-       overflow: hidden;
-    }
-    .ai-sm-image {
-       height: 140px;
-       background-size: cover;
-       background-position: center;
-       position: relative;
-    }
-    .match-badge-sm {
-       position: absolute;
-       bottom: 10px;
-       left: 10px;
-       background: var(--clr-ai-2);
-       color: white;
-       padding: 4px 10px;
-       border-radius: 8px;
-       font-size: 11px;
-       font-weight: 700;
-    }
-    .trending-tag {
-       position: absolute;
-       top: 10px;
-       left: 10px;
-       background: #ef4444;
-       color: white;
-       padding: 4px 8px;
-       border-radius: 6px;
-       font-size: 10px;
-       font-weight: 800;
-       letter-spacing: 0.5px;
-    }
-    .ai-sm-body { padding: 16px; }
-    .ai-sm-body h4 { font-size: 16px; font-weight: 700; margin-bottom: 12px; height: 44px; overflow: hidden; cursor: pointer; }
-    .ai-card-footer-sm { display: flex; justify-content: space-between; align-items: center; }
-    .ai-price-sm { font-weight: 800; color: var(--clr-text-main); }
-    .btn-cart-sm {
-       width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9; border: none; cursor: pointer;
+    .btn-join:hover {
+      background: var(--clr-brand);
+      color: var(--clr-white);
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);
     }
 
-    .empty-ai {
-       text-align: center;
-       padding: 60px;
-       background: white;
-       border-radius: 30px;
-       border: 2px dashed #e2e8f0;
-    }
-    .empty-ai i { font-size: 64px; color: #cbd5e1; margin-bottom: 24px; }
-    .btn-browse {
-       display: inline-block;
-       margin-top: 24px;
-       background: var(--clr-brand);
-       color: white;
-       padding: 12px 32px;
-       border-radius: 12px;
-       text-decoration: none;
-       font-weight: 700;
+    @keyframes loadingShimmer {
+      to { background-position-x: -200%; }
     }
 
-    .shimmer-card {
-       height: 350px;
-       background: #f1f5f9;
-       border-radius: 24px;
-       animation: shimmer 1.5s infinite linear;
+    @media (max-width: 1200px) {
+      .course-grid { grid-template-columns: repeat(3, 1fr); }
     }
-    @keyframes shimmer {
-       0% { opacity: 0.5; }
-       50% { opacity: 0.8; }
-       100% { opacity: 0.5; }
+    @media (max-width: 900px) {
+      .course-grid { grid-template-columns: repeat(2, 1fr); }
     }
-    .mt-5 { margin-top: 60px; }
-    `
-  ]
+    @media (max-width: 600px) {
+      .course-grid { grid-template-columns: 1fr; }
+    }
+  `]
 })
 export class AiRecommendationsComponent implements OnInit {
-  api = inject(ApiService);
-  auth = inject(AuthService);
-  dataService = inject(DataService);
+  public dataService = inject(DataService);
+  public authService = inject(AuthService);
+  private apiService = inject(ApiService);
 
-  personalizedCourses = signal<any[]>([]);
-  collaborativeCourses = signal<any[]>([]);
-  trendingCourses = signal<any[]>([]);
-  userInterests = signal<number[]>([]);
+  trendingCourses: any[] = [];
+  profileCourses: any[] = [];
+  relatedCourses: any[] = [];
 
-  loading = signal(true);
-  isEditingInterests = false;
+  loadingTrending = false;
+  loadingProfile = false;
+  loadingRelated = false;
+
+  skeletonCards = [1, 2, 3, 4];
 
   ngOnInit() {
-    this.loadData();
-  }
-
-  loadData() {
-    this.loading.set(true);
-
-    const requests: any = {
-      trending: this.api.getCourses({ sortBy: 'popular', pageSize: 12 }).pipe(catchError(() => of({ data: [] }))),
-      interests: this.auth.isLoggedIn() ? this.api.getUserInterests().pipe(catchError(() => of([]))) : of([])
-    };
-
-    const userId = this.auth.currentUser()?.userId;
-    if (this.auth.isLoggedIn() && userId) {
-      requests.personalized = this.api.getUserProfileRecommendations(userId).pipe(catchError(() => of([])));
-      requests.collaborative = this.api.getUserBasedRecommendations(userId).pipe(catchError(() => of([])));
-    }
-
-    forkJoin(requests).subscribe({
-      next: (res: any) => {
-        console.log('AI Recommendations Data:', res);
-        // Map personalized
-        if (res.personalized) {
-          this.personalizedCourses.set(res.personalized.map((c: any) => ({
-            ...c,
-            id: c.id || c.courseId || c.CourseId,
-            title: c.title || c.Title,
-            image: c.image || c.Image || c.anhUrl,
-            score: c.score || c.Score || 0,
-            instructor: c.instructor || c.Instructor || 'Chưa có',
-            averageRating: c.averageRating || c.AverageRating || 5,
-            totalReviews: c.totalReviews || c.TotalReviews || 0,
-            originalPrice: c.originalPrice || c.OriginalPrice || 0
-          })));
-        }
-
-        // Map collaborative
-        if (res.collaborative) {
-          this.collaborativeCourses.set(res.collaborative.map((c: any) => ({
-            ...c,
-            id: c.id || c.courseId || c.CourseId,
-            title: c.title || c.Title,
-            image: c.image || c.Image || c.anhUrl,
-            score: c.score || c.Score || 0,
-            originalPrice: c.originalPrice || c.OriginalPrice || 0
-          })));
-        }
-
-        // Map trending from PaginatedResponse
-        if (res.trending) {
-          const trending = (res.trending.data || []).map((c: any) => ({
-            ...c,
-            id: c.maKhoaHoc,
-            title: c.tieuDe,
-            image: c.anhUrl,
-            price: c.giaGoc,
-            averageRating: c.tbdanhGia || 5,
-            totalReviews: c.soLuongDanhGia || 0
-          }));
-          this.trendingCourses.set(trending);
-        }
-
-        if (res.interests) {
-          this.userInterests.set((res.interests || []).map((i: any) => i.maTheLoai));
-        }
-        this.loading.set(false);
-      },
-      error: (err) => {
-        console.error('AI Recommendations load error:', err);
-        this.loading.set(false);
-      }
-    });
-  }
-
-  toggleEditInterests() {
-    if (this.isEditingInterests) {
-      // Save
-      this.api.updateUserInterests(this.userInterests()).subscribe({
-        next: () => {
-          this.isEditingInterests = false;
-          this.loadData(); // Reload recommendations
+    if (this.authService.isLoggedIn()) {
+      this.apiService.getUserProfile().pipe(catchError(() => of(null))).subscribe((profile: any) => {
+        const userId = Number(profile?.maNguoiDung ?? profile?.id ?? 0);
+        if (userId) {
+          this.loadTrending(userId);
+          this.loadProfileBased(userId);
+          this.loadRelatedFromAllEnrolled();
         }
       });
-    } else {
-      this.isEditingInterests = true;
     }
   }
 
-  isInterest(catId: number): boolean {
-    return this.userInterests().includes(catId);
-  }
+  // 1. Call API user-based (Có Fallback sang Popular Courses)
+  private loadTrending(userId: number) {
+    this.loadingTrending = true;
 
-  toggleInterest(catId: number) {
-    if (!this.isEditingInterests) return;
+    this.apiService.getUserBasedRecommendations(userId).pipe(
+      catchError(() => of([])) // Nếu lỗi mạng/API, bắt lỗi và trả về mảng rỗng để kích hoạt fallback
+    ).subscribe((res: any) => {
+      const mappedCourses = this.normalizeAndMap(res);
 
-    this.userInterests.update(current => {
-      if (current.includes(catId)) {
-        return current.filter(id => id !== catId);
-      } else {
-        return [...current, catId];
+      // Nếu API user-based có trả về khóa học
+      if (mappedCourses.length > 0) {
+        this.trendingCourses = mappedCourses.slice(0, 4);
+        this.loadingTrending = false;
+      }
+      // FALLBACK: Nếu không có ai tương đồng, gọi API lấy khóa học phổ biến
+      else {
+        this.apiService.getPopularCourses().pipe(
+          catchError(() => of([])),
+          finalize(() => this.loadingTrending = false) // Chỉ tắt loading khi quá trình fallback hoàn tất
+        ).subscribe((popularRes: any) => {
+          this.trendingCourses = this.normalizeAndMap(popularRes).slice(0, 4);
+        });
       }
     });
   }
 
-  addToCart(courseId: number) {
-    this.dataService.addToCart(courseId).subscribe();
+  // 2. Call API user-profile
+  private loadProfileBased(userId: number) {
+    this.loadingProfile = true;
+    this.apiService.getUserProfileRecommendations(userId).pipe(
+      catchError(() => of([])),
+      finalize(() => this.loadingProfile = false)
+    ).subscribe((res: any) => {
+      this.profileCourses = this.normalizeAndMap(res).slice(0, 8);
+    });
+  }
+
+  // 3. Gộp điều kiện: Gợi ý khóa học liên quan từ TẤT CẢ các khóa học đã Enroll (Cả Đang học & Đã hoàn thành)
+  private loadRelatedFromAllEnrolled() {
+    this.loadingRelated = true;
+    this.apiService.getMyCourses(1, 100).pipe(
+      catchError(() => of({ data: [] })),
+      finalize(() => this.loadingRelated = false)
+    ).subscribe((res: any) => {
+      const enrolled = Array.isArray(res) ? res : (res?.data || []);
+
+      // Lấy danh sách ID mà KHÔNG lọc theo progress < 100
+      const sourceCourseIds = enrolled
+        .map((t: any) => Number(t?.khoaHoc?.maKhoaHoc ?? t?.maKhoaHoc ?? t?.courseId ?? t?.CourseId ?? 0))
+        .filter(Boolean);
+
+      if (!sourceCourseIds.length) {
+        this.relatedCourses = [];
+        return;
+      }
+
+      const uniqueSourceIds = [...new Set(sourceCourseIds)].slice(0, 6);
+
+      forkJoin(
+        uniqueSourceIds.map((courseId: any) =>
+          this.apiService.getSimilarCourses(courseId).pipe(catchError(() => of([])))
+        )
+      ).subscribe((results: any[]) => {
+        // Loại bỏ các khóa học mà người dùng đã mua rồi khỏi danh sách gợi ý
+        const excludeIds = new Set<number>(sourceCourseIds as number[]);
+
+        const merged = results
+          .flatMap((group: any) => (Array.isArray(group) ? group : []))
+          .map(item => this.mapCourse(item))
+          .filter(course => !!course.id && !excludeIds.has(Number(course.id)));
+
+        this.relatedCourses = this.dedupeAndSort(merged).slice(0, 8);
+      });
+    });
+  }
+
+  // Tiện ích để chuẩn hóa dữ liệu trả về từ Neo4j cho AppCourseCard
+  private normalizeAndMap(res: any): any[] {
+    const rawItems = Array.isArray(res) ? res : (res?.data || []);
+    return this.dedupeAndSort(rawItems.map((item: any) => this.mapCourse(item)));
+  }
+
+  private mapCourse(item: any) {
+    const id = Number(item?.courseId ?? item?.CourseId ?? item?.maKhoaHoc ?? item?.id ?? 0);
+    const totalReviews = Number(item?.totalReviews ?? item?.TotalReviews ?? item?.soLuongDanhGia ?? 0);
+    const rating = Number(item?.averageRating ?? item?.AverageRating ?? item?.rating ?? 0);
+    const originalPrice = Number(item?.originalPrice ?? item?.OriginalPrice ?? item?.price ?? item?.giaGoc ?? 0);
+    const score = Number(item?.score ?? item?.Score ?? item?.finalScore ?? 0);
+    const title = item?.title ?? item?.Title ?? item?.tieuDe ?? 'Chưa có tiêu đề';
+
+    return {
+      ...item,
+      id,
+      title,
+      slug: this.toSlug(title),
+      instructor: item?.instructor ?? item?.Instructor ?? item?.giangVien ?? 'Đang cập nhật',
+      rating,
+      reviewCount: this.formatCount(totalReviews),
+      price: originalPrice,
+      originalPrice,
+      image: item?.image ?? item?.Image ?? item?.anhUrl ?? item?.urlAnh ?? '',
+      category: item?.category ?? 'Gợi ý AI',
+      level: item?.level ?? 'Tất cả cấp độ',
+      modules: Number(item?.modules ?? item?.soLuongChuong ?? 0),
+      students: totalReviews,
+      description: item?.description ?? item?.moTa ?? '',
+      score
+    };
+  }
+
+  private dedupeAndSort(courses: any[]) {
+    const bestById = new Map<number, any>();
+    for (const course of courses) {
+      const id = Number(course?.id ?? 0);
+      if (!id) continue;
+      const current = bestById.get(id);
+      if (!current || Number(course?.score ?? 0) > Number(current?.score ?? 0)) {
+        bestById.set(id, course);
+      }
+    }
+    return Array.from(bestById.values()).sort((a, b) => Number(b?.score ?? 0) - Number(a?.score ?? 0));
+  }
+
+  private toSlug(str: string): string {
+    return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  private formatCount(n: number): string {
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+    return `${n}`;
   }
 }

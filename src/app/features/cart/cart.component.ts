@@ -4,12 +4,13 @@ import { RouterLink, Router } from '@angular/router';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { DataService } from '../../core/services/data.service';
 import { ApiService } from '../../core/services/api.service';
+import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule, RouterLink, HeaderComponent],
+  imports: [CommonModule, RouterLink, HeaderComponent, FormsModule],
   template: `
     <app-header />
     <div class="container cart-page">
@@ -41,8 +42,15 @@ import Swal from 'sweetalert2';
               </div>
             </div>
             <div class="item-price">
-              <span class="price-current">{{ item.course?.price | number }}đ</span>
-              <span class="price-old" *ngIf="item.course?.originalPrice && item.course!.originalPrice! > item.course!.price!">{{ item.course?.originalPrice | number }}đ</span>
+              <ng-container *ngIf="(item.course?.price ?? 0) < (item.course?.originalPrice ?? 0); else noPromo">
+                <span class="current-price">{{ item.course?.price | number }}đ</span>
+                <span class="old-price" style="text-decoration: line-through; color: #94a3b8; font-size: 13px; margin-left: 8px;">
+                  {{ item.course?.originalPrice | number }}đ
+                </span>
+              </ng-container>
+              <ng-template #noPromo>
+                <span class="current-price">{{ item.course?.price | number }}đ</span>
+              </ng-template>
             </div>
           </div>
         </div>
@@ -61,15 +69,28 @@ import Swal from 'sweetalert2';
             <div class="coupon-row">
               <h4>Mã giảm giá</h4>
               <div class="coupon-input">
-                <input type="text" class="form-input" placeholder="Nhập mã...">
-                <button class="btn btn-outline btn-sm">Áp dụng</button>
+                <input type="text" class="form-input" placeholder="Nhập mã..." [(ngModel)]="voucherCode">
+                <button class="btn btn-outline btn-sm" (click)="applyVoucher()" [disabled]="applyingVoucher">
+                  <ng-container *ngIf="!applyingVoucher">Áp dụng</ng-container>
+                  <ng-container *ngIf="applyingVoucher"><i class="fa-solid fa-spinner fa-spin"></i></ng-container>
+                </button>
               </div>
+              <div *ngIf="voucherError" style="color: #dc3545; font-size: 12px; margin-top: 6px;"><i class="fa-solid fa-circle-exclamation"></i> {{ voucherError }}</div>
+              <div *ngIf="voucherSuccess" style="color: #10B981; font-size: 12px; margin-top: 6px;"><i class="fa-solid fa-circle-check"></i> {{ voucherSuccess }}</div>
             </div>
 
             <div class="summary-total">
-              <div class="total-row final">
+              <div class="total-row">
+                <span>Tổng phụ:</span>
+                <span>{{ dataService.cartTotal() | number }}đ</span>
+              </div>
+              <div class="total-row discount" *ngIf="discountAmount > 0" style="color: var(--success);">
+                <span>Giảm giá ({{ discountPercent }}%):</span>
+                <span>-{{ discountAmount | number }}đ</span>
+              </div>
+              <div class="total-row final" style="border-top: 1px dashed var(--gray-300); margin-top: 8px; padding-top: 8px;">
                 <span><strong>Thanh toán:</strong></span>
-                <span class="final-value">{{ dataService.cartTotal() | number }}đ</span>
+                <span class="final-value">{{ finalTotal | number }}đ</span>
               </div>
             </div>
 
@@ -197,9 +218,63 @@ export class CartComponent implements OnInit {
   private router = inject(Router);
 
   checkoutLoading = false;
+  voucherCode = '';
+
+  // CÁC BIẾN MỚI THÊM:
+  applyingVoucher = false;
+  discountPercent = 0;
+  voucherError = '';
+  voucherSuccess = '';
 
   ngOnInit() {
     this.dataService.loadCart();
+  }
+
+  // TÍNH TOÁN TIỀN GIẢM VÀ TỔNG TIỀN
+  get discountAmount(): number {
+    return (this.dataService.cartTotal() * this.discountPercent) / 100;
+  }
+
+  get finalTotal(): number {
+    return Math.max(0, this.dataService.cartTotal() - this.discountAmount);
+  }
+
+  // Tính giá sau khi trừ Khuyến mãi của Admin (Nếu có)
+  getItemDiscountedPrice(item: any): number {
+    const course = item.maKhoaHocNavigation;
+    const giaGoc = course?.giaGoc || 0;
+    const km = course?.maKhuyenMaiNavigation;
+
+    if (km && new Date(km.ngayKetThuc) >= new Date()) {
+      const phanTramGiam = km.phanTramGiam || 0;
+      return giaGoc * (1 - phanTramGiam / 100);
+    }
+    return giaGoc;
+  }
+
+  // HÀM XỬ LÝ KHI BẤM "ÁP DỤNG"
+  applyVoucher() {
+    this.voucherError = '';
+    this.voucherSuccess = '';
+    this.discountPercent = 0;
+
+    if (!this.voucherCode.trim()) {
+      this.voucherError = 'Vui lòng nhập mã giảm giá';
+      return;
+    }
+
+    this.applyingVoucher = true;
+    this.apiService.applyVoucher(this.voucherCode).subscribe({
+      next: (res: any) => {
+        this.applyingVoucher = false;
+        this.discountPercent = res.phanTramGiam;
+        this.voucherSuccess = res.message;
+      },
+      error: (err) => {
+        this.applyingVoucher = false;
+        this.voucherError = err.error?.message || 'Mã giảm giá không hợp lệ';
+      }
+    });
   }
 
   removeItem(courseId?: number) {
@@ -246,13 +321,21 @@ export class CartComponent implements OnInit {
     if (this.dataService.cartItems().length === 0) return;
 
     this.checkoutLoading = true;
-    this.apiService.checkout().subscribe({
-      next: (res) => {
+    // TRUYỀN MÃ VOUCHER XUỐNG BACKEND TẠI ĐÂY
+    this.apiService.checkout('Chuyển khoản', this.voucherCode).subscribe({
+      next: (res: any) => {
         this.checkoutLoading = false;
+
+        // Tùy chỉnh thông báo nếu được giảm giá
+        let msg = 'Bạn có thể bắt đầu học ngay.';
+        if (res.soTienGiam > 0) {
+          msg = `Bạn đã áp dụng mã thành công và được giảm ${res.soTienGiam.toLocaleString('vi-VN')}đ!`;
+        }
+
         Swal.fire({
           icon: 'success',
           title: 'Thanh toán thành công!',
-          text: 'Bạn có thể bắt đầu học ngay.',
+          text: msg,
           confirmButtonColor: '#5a67d8'
         }).then(() => {
           this.dataService.loadCart();
