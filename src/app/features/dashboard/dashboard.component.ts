@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { HeaderComponent } from '../../shared/components/header/header.component';
@@ -601,6 +601,7 @@ export class DashboardComponent implements OnInit {
   public dataService = inject(DataService);
   public authService = inject(AuthService);
   private apiService = inject(ApiService);
+  private router = inject(Router);
 
   showAllOngoing = false;
   showAllCompleted = false;
