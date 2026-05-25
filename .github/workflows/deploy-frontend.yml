@@ -37,7 +37,7 @@ jobs:
           cd /home/azureuser/elearning-project
           
           # Kéo image frontend mới nhất từ Docker Hub về
-          sudo docker-compose pull frontend
+          sudo docker compose pull frontend
           
           # Khởi động lại (nó sẽ chỉ update mỗi frontend)
-          sudo docker-compose up -d
+          sudo docker compose up -d
