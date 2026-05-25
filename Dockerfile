@@ -20,6 +20,7 @@ FROM nginx:alpine
 # Xóa trang web mặc định của Nginx
 RUN rm -rf /usr/share/nginx/html/*
 
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/edulearn/browser /usr/share/nginx/html
 
 # Mở port 80 cho web
