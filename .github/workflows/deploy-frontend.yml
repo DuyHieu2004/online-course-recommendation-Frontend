@@ -23,7 +23,6 @@ jobs:
       with:
         context: .
         push: true
-        # THAY TÊN TÀI KHOẢN DOCKER CỦA BẠN VÀO ĐÂY:
         tags: duyhieu2004/my-frontend:latest 
 
     - name: Deploy to Linux VM
