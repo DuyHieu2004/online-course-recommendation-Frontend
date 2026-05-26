@@ -20,8 +20,8 @@ import { ApiService } from '../../../core/services/api.service';
           </p>
         </div>
         <div class="page-header-right">
-          <button class="header-action-btn">
-            <i class="fa-solid fa-download"></i> Xuất báo cáo
+          <button class="header-action-btn" (click)="goToReports()">
+            <i class="fa-solid fa-download"></i> Xem báo cáo chi tiết
           </button>
           <button class="header-action-btn primary">
             <i class="fa-solid fa-plus"></i> Thêm mới
@@ -809,5 +809,9 @@ export class AdminDashboardComponent implements OnInit {
 
   goToApprovals() {
     this.router.navigate(['/admin/courses/approvals']);
+  }
+
+  goToReports() {
+    this.router.navigate(['/admin/reports']);
   }
 }

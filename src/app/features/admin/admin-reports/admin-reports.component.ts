@@ -299,12 +299,12 @@ import { ApiService } from '../../../core/services/api.service';
     /* ===== CẤU HÌNH KHI NGƯỜI DÙNG NHẤN IN (CTRL + P) ===== */
     @media print {
       /* Ẩn hoàn toàn layout trang web (Sidebar, Topbar, nội dung thẻ div.screen-only) */
-      .screen-only, .admin-sidebar, .admin-topbar, app-sidebar, app-header {
+      .screen-only, ::ng-deep .admin-sidebar, ::ng-deep .admin-topbar, ::ng-deep app-sidebar, ::ng-deep app-header {
         display: none !important;
       }
 
       /* Reset lại layout gốc để không bị kẹt lề của giao diện admin */
-      .admin-main, app-admin-layout, body, html {
+      ::ng-deep .admin-main, ::ng-deep app-admin-layout, ::ng-deep body, ::ng-deep html {
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
