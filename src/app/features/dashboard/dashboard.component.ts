@@ -636,11 +636,32 @@ export class DashboardComponent implements OnInit {
   }
 
   get completedCourses() {
-    return this.dataService.enrolledCourses().filter(c => c.progress === 100);
+    // HƯỚNG 1: Sử dụng danh sách chứng chỉ để render các khóa học đã hoàn thành
+    return this.dataService.certificates().map((cert: any) => {
+      // Lấy thông tin khóa học từ dữ liệu chứng chỉ
+      // (Dự phòng cho cả trường hợp lấy data thô từ API hoặc đã qua DataService map)
+      const courseId = cert.khoaHoc?.maKhoaHoc || cert.courseId || 0;
+      const title = cert.khoaHoc?.tieuDe || cert.courseName || 'Khóa học đã hoàn thành';
+      const image = cert.khoaHoc?.anhUrl || '';
+
+      return {
+        course: {
+          id: courseId,
+          title: title,
+          image: image,
+          // API Chứng chỉ hiện tại không trả về Giảng viên và Số chương,
+          // nên ta để giá trị mặc định để giao diện không bị lỗi undefined
+          instructor: 'Khóa học',
+          modules: '-'
+        },
+        progress: 100,
+        endDate: null // Khóa học hoàn thành không cần hiện cảnh báo hết hạn
+      };
+    });
   }
 
   get completedCoursesCount() {
-    return this.completedCourses.length;
+    return this.dataService.certificates().length;
   }
 
   get ongoingCourses() {
