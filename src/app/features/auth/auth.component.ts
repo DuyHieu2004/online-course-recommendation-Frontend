@@ -23,6 +23,15 @@ import { AuthService } from '../../core/services/auth.service';
         <div *ngIf="successMessage()" class="alert alert-success">{{ successMessage() }}</div>
 
         <div *ngIf="activeTab() === 'login'" class="auth-form">
+          <div class="quick-login-wrapper">
+            <span class="quick-login-title">Demo đăng nhập nhanh:</span>
+            <div class="quick-login-buttons">
+              <button type="button" class="quick-btn" (click)="fillDemoLogin('thang13112004@gmail.com')">Học viên</button>
+              <button type="button" class="quick-btn" (click)="fillDemoLogin('gv10285@elearn.vn')">Giảng viên</button>
+              <button type="button" class="quick-btn" (click)="fillDemoLogin('admin@elearn.vn')">Quản trị viên</button>
+            </div>
+            <small class="quick-login-note">* Nếu không đúng mật khẩu thì bấm quên mật khẩu để tự reset 123456</small>
+          </div>
           <div class="form-group">
             <label>Email</label>
             <input type="email" class="form-input" placeholder="name@email.com"
@@ -159,6 +168,49 @@ import { AuthService } from '../../core/services/auth.service';
     .auth-tab.active {
       color: var(--gray-800);
       border-bottom-color: var(--primary);
+    }
+    .quick-login-wrapper {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--gray-300);
+    }
+    .quick-login-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-700);
+      display: block;
+      margin-bottom: 8px;
+    }
+    .quick-login-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .quick-btn {
+      flex: 1;
+      padding: 8px 4px;
+      font-size: 12px;
+      background: var(--white);
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--gray-700);
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .quick-btn:hover {
+      border-color: var(--primary, #3b82f6);
+      color: var(--primary, #3b82f6);
+      background: #eff6ff;
+    }
+    .quick-login-note {
+      font-size: 12px;
+      color: #ef4444;
+      display: block;
+      line-height: 1.4;
+      font-style: italic;
     }
     .form-group { margin-bottom: 14px; }
     .form-group label {
@@ -307,6 +359,11 @@ export class AuthComponent {
   showConfirmPassword = signal(false);
 
   selectedFile: File | null = null;
+
+  fillDemoLogin(email: string) {
+    this.loginEmail = email;
+    this.loginPassword = '123456';
+  }
 
   closeModal(event: MouseEvent) {
     this.router.navigate(['/home']);

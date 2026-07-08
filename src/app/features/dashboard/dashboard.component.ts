@@ -603,8 +603,6 @@ export class DashboardComponent implements OnInit {
   private apiService = inject(ApiService);
   private router = inject(Router);
 
-  public router = inject(Router);
-
   showAllOngoing = false;
   showAllCompleted = false;
   showAllCertificates = false;
@@ -636,11 +634,27 @@ export class DashboardComponent implements OnInit {
   }
 
   get completedCourses() {
-    return this.dataService.enrolledCourses().filter(c => c.progress === 100);
+    return this.dataService.certificates().map((cert: any) => {
+      const courseId = cert.khoaHoc?.maKhoaHoc || cert.courseId || 0;
+      const title = cert.khoaHoc?.tieuDe || cert.courseName || 'Khóa học đã hoàn thành';
+      const image = cert.khoaHoc?.anhUrl || '';
+
+      return {
+        course: {
+          id: courseId,
+          title: title,
+          image: image,
+          instructor: 'Khóa học',
+          modules: '-'
+        },
+        progress: 100,
+        endDate: null // Khóa học hoàn thành không cần hiện cảnh báo hết hạn
+      };
+    });
   }
 
   get completedCoursesCount() {
-    return this.completedCourses.length;
+    return this.dataService.certificates().length;
   }
 
   get ongoingCourses() {
